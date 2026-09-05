@@ -8,11 +8,7 @@
  * @module
  */
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from 'convex/server'
+import type { ApiFromModules, FilterApi, FunctionReference } from 'convex/server'
 import type * as cards from '../cards.js'
 import type * as categories from '../categories.js'
 import type * as lib from '../lib.js'
@@ -32,11 +28,5 @@ declare const fullApi: ApiFromModules<{
   lib: typeof lib
   settings: typeof settings
 }>
-export declare const api: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, 'public'>
->
-export declare const internal: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, 'internal'>
->
+export declare const api: FilterApi<typeof fullApi, FunctionReference<any, 'public'>>
+export declare const internal: FilterApi<typeof fullApi, FunctionReference<any, 'internal'>>

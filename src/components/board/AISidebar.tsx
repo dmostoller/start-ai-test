@@ -62,13 +62,7 @@ function Messages({ messages }: { messages: ChatMessages }) {
             }
             if (part.type === 'tool-call') {
               const output = part.output as { summary?: string } | undefined
-              return (
-                <ToolLine
-                  key={index}
-                  name={part.name}
-                  summary={output?.summary}
-                />
-              )
+              return <ToolLine key={index} name={part.name} summary={output?.summary} />
             }
             return null
           })}
@@ -78,13 +72,7 @@ function Messages({ messages }: { messages: ChatMessages }) {
   )
 }
 
-export default function AISidebar({
-  open,
-  onClose,
-}: {
-  open: boolean
-  onClose: () => void
-}) {
+export default function AISidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { messages, sendMessage, status, error } = useBoardChat()
   const [input, setInput] = useState('')
 
@@ -93,7 +81,8 @@ export default function AISidebar({
   const submit = (text: string) => {
     const value = text.trim()
     if (!value || busy) return
-    sendMessage(value)
+    // The stream is rendered from `messages`; errors surface through `error`.
+    void sendMessage(value)
     setInput('')
   }
 
@@ -126,8 +115,7 @@ export default function AISidebar({
 
         {error ? (
           <p className="mx-4 mb-2 rounded-xl border border-[rgba(226,114,91,0.5)] bg-[rgba(226,114,91,0.14)] px-3 py-2 text-xs text-[#b4462f]">
-            {error.message ||
-              'The assistant is unavailable. Check GEMINI_API_KEY on the server.'}
+            {error.message || 'The assistant is unavailable. Check GEMINI_API_KEY on the server.'}
           </p>
         ) : null}
 
@@ -157,9 +145,7 @@ export default function AISidebar({
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={
-                busy ? 'Thinking…' : 'Add an expense, ask a question…'
-              }
+              placeholder={busy ? 'Thinking…' : 'Add an expense, ask a question…'}
               rows={1}
               className="ui-textarea pr-10 text-sm"
               style={{ minHeight: '40px', maxHeight: '140px' }}

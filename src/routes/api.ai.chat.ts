@@ -46,10 +46,7 @@ export const Route = createFileRoute('/api/ai/chat')({
             return new Response(null, { status: 499 })
           }
           console.error('AI chat request failed', error)
-          return Response.json(
-            { error: 'Failed to process chat request' },
-            { status: 500 },
-          )
+          return Response.json({ error: 'Failed to process chat request' }, { status: 500 })
         }
       },
     },

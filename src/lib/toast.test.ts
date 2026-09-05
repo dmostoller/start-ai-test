@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vite-plus/test'
 import { dismissToast, pushToast, toasts, withToast } from './toast'
 
 beforeEach(() => {
@@ -22,9 +22,7 @@ describe('toasts', () => {
   })
 
   test('passes a successful mutation through untouched', async () => {
-    await expect(
-      withToast(Promise.resolve('ok'), { error: 'Nope' }),
-    ).resolves.toBe('ok')
+    await expect(withToast(Promise.resolve('ok'), { error: 'Nope' })).resolves.toBe('ok')
     expect(toasts.state).toHaveLength(0)
   })
 
@@ -35,8 +33,6 @@ describe('toasts', () => {
     })
 
     expect(result).toBeUndefined()
-    expect(toasts.state).toMatchObject([
-      { message: 'Could not save the card', tone: 'error' },
-    ])
+    expect(toasts.state).toMatchObject([{ message: 'Could not save the card', tone: 'error' }])
   })
 })

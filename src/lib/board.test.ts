@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vite-plus/test'
 import {
   DAY,
   fromDateInput,
@@ -68,15 +68,8 @@ describe('urgency', () => {
   })
 
   test('never nags about a completed card', () => {
-    expect(urgency(card({ date: now - 30 * DAY, status: 'paid' }), now)).toBe(
-      'done',
-    )
-    expect(
-      urgency(
-        card({ type: 'income', status: 'received', date: now - DAY }),
-        now,
-      ),
-    ).toBe('done')
+    expect(urgency(card({ date: now - 30 * DAY, status: 'paid' }), now)).toBe('done')
+    expect(urgency(card({ type: 'income', status: 'received', date: now - DAY }), now)).toBe('done')
   })
 })
 

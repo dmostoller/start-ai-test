@@ -40,9 +40,14 @@ deploy the branch first — but production deploys track `main` by default.
 ## 1. Local setup
 
 ```bash
-npm install
+pnpm install
 cp .env.example .env.local
 ```
+
+The repo uses [Vite+](https://viteplus.dev) and pnpm — `packageManager` in
+`package.json` pins the pnpm version, so `corepack enable` is enough to get the
+right one. Every command below runs through pnpm; nothing needs a global
+install.
 
 Leave `.env.local` open; the next steps fill it in.
 
@@ -54,7 +59,7 @@ Convex holds cards, categories and per-user settings, and pushes live updates to
 every open tab.
 
 ```bash
-npx convex dev
+pnpm exec convex dev
 ```
 
 The first run walks you through logging in and creating a project. Name it
@@ -64,12 +69,12 @@ watches for changes.
 
 Leave it running while you develop. Two deployments exist per project:
 
-| Deployment | Created by          | Used by         |
-| ---------- | ------------------- | --------------- |
-| dev        | `npx convex dev`    | your machine    |
-| prod       | `npx convex deploy` | Vercel (step 7) |
+| Deployment | Created by      | Used by         |
+| ---------- | --------------- | --------------- |
+| dev        | `convex dev`    | your machine    |
+| prod       | `convex deploy` | Vercel (step 7) |
 
-Verify: the Convex dashboard (`npx convex dashboard`) shows `cards`,
+Verify: the Convex dashboard (`pnpm exec convex dashboard`) shows `cards`,
 `categories` and `settings` tables, empty.
 
 ---
@@ -93,7 +98,7 @@ sessions and OAuth accounts.
 4. Create the auth tables:
 
    ```bash
-   npx -y @better-auth/cli migrate
+   pnpm dlx @better-auth/cli migrate
    ```
 
    It prints the schema it is about to create (`user`, `session`, `account`,
@@ -112,7 +117,7 @@ than an error.
 ## 4. Better Auth secret
 
 ```bash
-npx -y @better-auth/cli secret
+pnpm dlx @better-auth/cli secret
 ```
 
 Paste the result into `.env.local`:
@@ -175,7 +180,7 @@ setup never shows a broken button.
 ### Check the whole thing locally
 
 ```bash
-npm run dev     # in a second terminal, with `npx convex dev` still running
+pnpm dev     # in a second terminal, with `convex dev` still running
 ```
 
 Sign up, add a card, drag it to **Paid**, then ask the assistant
@@ -196,14 +201,14 @@ preset: **Vite** (or "Other" — the build command is what matters).
 
 ### 7b. Build settings
 
-| Setting          | Value                                     |
-| ---------------- | ----------------------------------------- |
-| Build command    | `npx convex deploy --cmd 'npm run build'` |
-| Output directory | leave empty                               |
-| Install command  | `npm ci` (Vercel's default)               |
-| Node version     | 22.x                                      |
+| Setting          | Value                                            |
+| ---------------- | ------------------------------------------------ |
+| Build command    | `pnpm exec convex deploy --cmd 'pnpm run build'` |
+| Output directory | leave empty                                      |
+| Install command  | leave empty (Vercel detects pnpm)                |
+| Node version     | 22.x                                             |
 
-`npx convex deploy --cmd` pushes `convex/` to your **production** Convex
+`convex deploy --cmd` pushes `convex/` to your **production** Convex
 deployment, sets `VITE_CONVEX_URL` to the production URL, and only then runs the
 app build — so the deployed bundle always points at the deployment whose schema
 it was built against.
@@ -252,13 +257,13 @@ Then, because two values depend on the domain Vercel just handed you:
 
 | Task                      | Command                                                |
 | ------------------------- | ------------------------------------------------------ |
-| Develop                   | `npx convex dev` + `npm run dev`                       |
+| Develop                   | `pnpm exec convex dev` + `pnpm dev`                    |
 | Change the Convex schema  | save the file — `convex dev` pushes it                 |
 | Ship                      | push to `main`; Vercel builds and `convex deploy` runs |
-| Run the checks CI runs    | `npm run lint && npm run typecheck && npm test`        |
-| Build exactly like Vercel | `VERCEL=1 npm run build` → `.vercel/output`            |
-| Preview the server build  | `npm run build && node .output/server/index.mjs`       |
-| Convex production console | `npx convex dashboard --prod`                          |
+| Run the checks CI runs    | `pnpm check && pnpm test`                              |
+| Build exactly like Vercel | `VERCEL=1 pnpm build` → `.vercel/output`               |
+| Preview the server build  | `pnpm build && node .output/server/index.mjs`          |
+| Convex production console | `pnpm exec convex dashboard --prod`                    |
 
 Schema changes reach production only through `convex deploy`, which the Vercel
 build command runs for you. Adding a required field to a table with existing
@@ -269,7 +274,7 @@ rows will be rejected — add it as `v.optional(...)`, backfill, then tighten.
 ## Troubleshooting
 
 **Build fails: `Missing VITE_CONVEX_URL`** — the build command is missing the
-`npx convex deploy --cmd` wrapper, or `CONVEX_DEPLOY_KEY` is unset in Vercel.
+`convex deploy --cmd` wrapper, or `CONVEX_DEPLOY_KEY` is unset in Vercel.
 
 **Runtime: `DATABASE_URL is required in production`** — the variable is missing
 from the Production environment (setting it only for Preview is a common slip).

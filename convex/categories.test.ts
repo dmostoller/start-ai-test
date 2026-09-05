@@ -1,5 +1,5 @@
 import { convexTest } from 'convex-test'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vite-plus/test'
 import schema from './schema'
 import { api } from './_generated/api'
 
@@ -78,9 +78,9 @@ describe('categories', () => {
       type: 'expense',
     })
 
-    await expect(
-      t.mutation(api.categories.remove, { userId: 'someone-else', id }),
-    ).rejects.toThrow(/not found/i)
+    await expect(t.mutation(api.categories.remove, { userId: 'someone-else', id })).rejects.toThrow(
+      /not found/i,
+    )
 
     await t.mutation(api.categories.remove, { userId: USER, id })
     const categories = await t.query(api.categories.list, { userId: USER })

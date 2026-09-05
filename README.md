@@ -19,7 +19,7 @@ Built to the spec in [PLAN.md](./PLAN.md).
 | State       | TanStack Store (toasts)                              |
 | Drag & drop | dnd-kit (pointer, touch and keyboard)                |
 | Styling     | Tailwind CSS v4, light/dark themed with CSS vars     |
-| Tests       | Vitest + `convex-test`                               |
+| Tooling     | Vite+ (`vp`): Vite, Vitest, Oxlint, Oxfmt, pnpm      |
 | Deploy      | Vercel (Nitro), Convex prod, Neon Postgres           |
 
 ## What the app does
@@ -48,25 +48,25 @@ Built to the spec in [PLAN.md](./PLAN.md).
 ## Getting started
 
 ```bash
-npm install
-npx convex dev      # creates a deployment, fills CONVEX_DEPLOYMENT / VITE_CONVEX_URL
-npm run dev         # http://localhost:3000
+pnpm install
+pnpm exec convex dev   # creates a deployment, fills CONVEX_DEPLOYMENT / VITE_CONVEX_URL
+pnpm dev               # http://localhost:3000
 ```
 
 Copy `.env.example` to `.env.local` and fill in:
 
 | Variable                  | Purpose                                             |
 | ------------------------- | --------------------------------------------------- |
-| `CONVEX_DEPLOYMENT`       | Written by `npx convex dev`                         |
+| `CONVEX_DEPLOYMENT`       | Written by `convex dev`                             |
 | `VITE_CONVEX_URL`         | Convex deployment URL (browser **and** AI tools)    |
 | `BETTER_AUTH_URL`         | App origin, e.g. `http://localhost:3000`            |
-| `BETTER_AUTH_SECRET`      | `npx -y @better-auth/cli secret`                    |
+| `BETTER_AUTH_SECRET`      | `pnpm dlx @better-auth/cli secret`                  |
 | `DATABASE_URL`            | Postgres for Better Auth — required in production   |
 | `GOOGLE_CLIENT_ID/SECRET` | Optional; enables the "Continue with Google" button |
 | `GEMINI_API_KEY`          | Required for the AI assistant                       |
 | `GEMINI_MODEL`            | Defaults to `gemini-2.5-flash`                      |
 
-`npx convex dev` must stay running (or be run once with `--once`) for schema
+`convex dev` must stay running (or be run once with `--once`) for schema
 changes in `convex/` to reach the deployment; it also regenerates
 `convex/_generated/`.
 
@@ -77,7 +77,7 @@ OAuth accounts. Point `DATABASE_URL` at any Postgres (Neon, Supabase, RDS…) an
 run the migration once:
 
 ```bash
-npx -y @better-auth/cli migrate
+pnpm dlx @better-auth/cli migrate
 ```
 
 Without `DATABASE_URL` the app falls back to Better Auth's in-memory store and
@@ -87,18 +87,24 @@ accounts.
 
 ## Scripts
 
-| Script               | Does                                     |
-| -------------------- | ---------------------------------------- |
-| `npm run dev`        | Dev server on port 3000                  |
-| `npm run build`      | Production build                         |
-| `npm test`           | Vitest (Convex functions + client logic) |
-| `npm run test:watch` | Vitest in watch mode                     |
-| `npm run typecheck`  | `tsc --noEmit`                           |
-| `npm run lint`       | ESLint                                   |
-| `npm run format`     | Prettier + `eslint --fix`                |
-| `npm run convex:dev` | Convex dev/codegen watcher               |
+This project uses [Vite+](https://viteplus.dev) and pnpm. `vp` comes from the
+`vite-plus` dependency, so `pnpm run <script>` works without installing anything
+globally; if you have the global `vp` CLI, `vp check` and friends work directly.
 
-CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests and the build on
+| Script                | Does                                       |
+| --------------------- | ------------------------------------------ |
+| `pnpm dev`            | Dev server on port 3000                    |
+| `pnpm build`          | Production build (Vite + Rolldown + Nitro) |
+| `pnpm test`           | Vitest (Convex functions + client logic)   |
+| `pnpm test:watch`     | Vitest in watch mode                       |
+| `pnpm check`          | Oxfmt + Oxlint + type checks, in one pass  |
+| `pnpm check --fix`    | …and fix what can be fixed                 |
+| `pnpm run format`     | Oxfmt only                                 |
+| `pnpm run lint`       | Oxlint only                                |
+| `pnpm run typecheck`  | `tsc --noEmit` (the full compiler)         |
+| `pnpm run convex:dev` | Convex dev/codegen watcher                 |
+
+CI (`.github/workflows/ci.yml`) runs `pnpm check`, the tests and the build on
 every push and pull request.
 
 ## Tests
@@ -110,7 +116,7 @@ Client-side coverage is the pure logic — date handling, urgency, reminder
 derivation, the assistant's card filter and the toast queue.
 
 ```bash
-npm test
+pnpm test
 ```
 
 ## How the AI writes to the board
@@ -154,13 +160,13 @@ OAuth, Gemini keys and the Vercel project, in the order they need to happen.
 
 The short version, once the accounts exist:
 
-- Vercel build command: `npx convex deploy --cmd 'npm run build'`
+- Vercel build command: `pnpm exec convex deploy --cmd 'pnpm run build'`
 - Environment: `CONVEX_DEPLOY_KEY`, `DATABASE_URL`, `BETTER_AUTH_SECRET`,
   `BETTER_AUTH_URL`, `GEMINI_API_KEY` (plus the Google pair, if used)
 
 `vite.config.ts` uses the Nitro plugin, which picks the Vercel preset from
 `VERCEL=1` at build time and a plain Node server otherwise — so
-`npm run build && node .output/server/index.mjs` previews the real production
+`pnpm build && node .output/server/index.mjs` previews the real production
 server locally.
 
 ## Known deviations from the plan
@@ -168,6 +174,10 @@ server locally.
 - **Netlify → Vercel** — the TanStack CLI has no Vercel option, so the scaffold
   shipped the Netlify plugin. It has been swapped for the Nitro plugin, which
   covers Vercel and plain Node from one config.
+- **ESLint and Prettier are gone.** The project runs on Vite+, so linting is
+  Oxlint and formatting is Oxfmt, both configured in `vite.config.ts` and run by
+  `pnpm check`. Type-aware lint rules and type checking come through the same
+  command.
 - **shadcn/ui** — the UI is built on the scaffold's own themed CSS layer
   (`src/styles.css`, the `ui-*` classes) rather than shadcn components. Both
   give the same light/dark behaviour; this avoided re-skinning a finished UI.

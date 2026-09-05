@@ -40,9 +40,7 @@ export default function Column({
     >
       <header className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-baseline gap-2">
-          <h3 className="text-sm font-semibold tracking-tight text-[var(--sea-ink)]">
-            {title}
-          </h3>
+          <h3 className="text-sm font-semibold tracking-tight text-[var(--sea-ink)]">{title}</h3>
           <span className="rounded-full bg-[var(--chip-bg)] px-2 py-0.5 text-[11px] text-[var(--sea-ink-soft)]">
             {cards.length}
           </span>
@@ -62,10 +60,7 @@ export default function Column({
         </div>
       </header>
 
-      <SortableContext
-        items={cards.map((c) => c._id)}
-        strategy={verticalListSortingStrategy}
-      >
+      <SortableContext items={cards.map((c) => c._id)} strategy={verticalListSortingStrategy}>
         <div className="flex flex-1 flex-col gap-2">
           {cards.map((card) => (
             <BoardCard

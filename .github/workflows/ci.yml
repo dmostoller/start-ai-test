@@ -11,20 +11,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # `packageManager` in package.json pins the pnpm version.
+      - run: corepack enable
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
-      - run: npm run lint
+      # Vite+: format, lint and type checks in one pass.
+      - run: pnpm run check
 
-      - run: npm run typecheck
+      - run: pnpm test
 
-      - run: npm test
-
-      - run: npm run build
+      - run: pnpm run build
         env:
           # The build only needs the variable to exist; nothing is called.
           VITE_CONVEX_URL: https://example.convex.cloud

@@ -1,10 +1,4 @@
-import {
-  AlertTriangle,
-  Clock,
-  TrendingDown,
-  TrendingUp,
-  Wallet,
-} from 'lucide-react'
+import { AlertTriangle, Clock, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
 import { formatCurrency } from '#/lib/board'
 
 export interface BoardStats {
@@ -41,15 +35,9 @@ function Stat({
     <div className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-3">
       <span className={`shrink-0 ${toneClass}`}>{icon}</span>
       <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wide text-[var(--sea-ink-soft)]">
-          {label}
-        </p>
-        <p className={`text-base font-bold tabular-nums ${toneClass}`}>
-          {value}
-        </p>
-        {sub ? (
-          <p className="text-[11px] text-[var(--sea-ink-soft)]">{sub}</p>
-        ) : null}
+        <p className="text-[11px] uppercase tracking-wide text-[var(--sea-ink-soft)]">{label}</p>
+        <p className={`text-base font-bold tabular-nums ${toneClass}`}>{value}</p>
+        {sub ? <p className="text-[11px] text-[var(--sea-ink-soft)]">{sub}</p> : null}
       </div>
     </div>
   )

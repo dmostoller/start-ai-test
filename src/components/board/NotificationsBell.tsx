@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, Bell, CalendarClock, Check, Clock } from 'lucide-react'
-import {
-  buildAlerts,
-  pruneDismissed,
-  readDismissed,
-  writeDismissed,
-} from '#/lib/notifications'
+import { buildAlerts, pruneDismissed, readDismissed, writeDismissed } from '#/lib/notifications'
 import type { Alert, AlertKind } from '#/lib/notifications'
 import type { Card } from '#/lib/board'
 
@@ -72,9 +67,7 @@ export default function NotificationsBell({
           />
           <div className="absolute right-0 z-[96] mt-2 w-[min(92vw,22rem)] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-xl backdrop-blur-xl">
             <header className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
-              <h2 className="text-sm font-semibold text-[var(--sea-ink)]">
-                Reminders
-              </h2>
+              <h2 className="text-sm font-semibold text-[var(--sea-ink)]">Reminders</h2>
               {visible.length > 0 ? (
                 <button
                   type="button"
@@ -110,9 +103,7 @@ export default function NotificationsBell({
                       <p className="truncate text-sm font-medium text-[var(--sea-ink)]">
                         {alert.title}
                       </p>
-                      <p className="text-xs text-[var(--sea-ink-soft)]">
-                        {alert.detail}
-                      </p>
+                      <p className="text-xs text-[var(--sea-ink-soft)]">{alert.detail}</p>
                     </button>
                     <button
                       type="button"

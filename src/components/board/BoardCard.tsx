@@ -37,9 +37,7 @@ export function CardFace({
   return (
     <article
       className={`group rounded-2xl border bg-[var(--surface-strong)] p-3 transition ${accent} ${
-        dragging
-          ? 'rotate-1 shadow-xl'
-          : 'hover:-translate-y-0.5 hover:shadow-md'
+        dragging ? 'rotate-1 shadow-xl' : 'hover:-translate-y-0.5 hover:shadow-md'
       } ${state === 'done' ? 'opacity-70' : ''}`}
     >
       <div className="flex items-start gap-2">
@@ -52,20 +50,14 @@ export function CardFace({
           <GripVertical size={16} />
         </button>
 
-        <button
-          type="button"
-          onClick={onOpen}
-          className="min-w-0 flex-1 text-left"
-        >
+        <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left">
           <div className="flex items-baseline justify-between gap-2">
             <span className="truncate text-sm font-semibold text-[var(--sea-ink)]">
               {card.description}
             </span>
             <span
               className={`shrink-0 text-sm font-bold tabular-nums ${
-                card.type === 'income'
-                  ? 'text-[var(--palm)]'
-                  : 'text-[var(--sea-ink)]'
+                card.type === 'income' ? 'text-[var(--palm)]' : 'text-[var(--sea-ink)]'
               }`}
             >
               {card.type === 'income' ? '+' : ''}
@@ -74,9 +66,7 @@ export function CardFace({
           </div>
 
           {card.source ? (
-            <p className="mt-0.5 truncate text-xs text-[var(--sea-ink-soft)]">
-              {card.source}
-            </p>
+            <p className="mt-0.5 truncate text-xs text-[var(--sea-ink-soft)]">{card.source}</p>
           ) : null}
 
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
@@ -148,14 +138,10 @@ export default function BoardCard({
   onDelete: () => void
   onRepeat: () => void
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: card._id, data: { card } })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: card._id,
+    data: { card },
+  })
 
   return (
     <div

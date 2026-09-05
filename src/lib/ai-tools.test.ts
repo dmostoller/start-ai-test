@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vite-plus/test'
 import { boardSystemPrompt, filterCards } from './ai-tools'
 import { DAY } from './board'
 
@@ -97,9 +97,7 @@ describe('filterCards', () => {
   })
 
   test('combines filters', () => {
-    expect(ids({ type: 'expense', recurring: true, search: 'rent' })).toEqual([
-      'rent',
-    ])
+    expect(ids({ type: 'expense', recurring: true, search: 'rent' })).toEqual(['rent'])
   })
 })
 

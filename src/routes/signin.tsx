@@ -137,9 +137,7 @@ function SignIn() {
               <input
                 className="ui-input"
                 type="password"
-                autoComplete={
-                  mode === 'signin' ? 'current-password' : 'new-password'
-                }
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                 placeholder="Password"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -147,9 +145,7 @@ function SignIn() {
             )}
           </form.Field>
 
-          {error ? (
-            <p className="ui-alert ui-alert-danger text-sm">{error}</p>
-          ) : null}
+          {error ? <p className="ui-alert ui-alert-danger text-sm">{error}</p> : null}
 
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
@@ -158,11 +154,7 @@ function SignIn() {
                 disabled={isSubmitting}
                 className="ui-button justify-center px-4 py-2.5"
               >
-                {isSubmitting
-                  ? 'Working…'
-                  : mode === 'signin'
-                    ? 'Sign in'
-                    : 'Create account'}
+                {isSubmitting ? 'Working…' : mode === 'signin' ? 'Sign in' : 'Create account'}
               </button>
             )}
           </form.Subscribe>
@@ -176,9 +168,7 @@ function SignIn() {
           }}
           className="mt-4 w-full text-center text-sm text-[var(--lagoon-deep)]"
         >
-          {mode === 'signin'
-            ? 'Need an account? Sign up'
-            : 'Already have an account? Sign in'}
+          {mode === 'signin' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
         </button>
       </div>
     </main>

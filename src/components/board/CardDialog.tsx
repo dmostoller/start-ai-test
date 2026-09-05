@@ -2,6 +2,7 @@ import { useForm } from '@tanstack/react-form'
 import { X } from 'lucide-react'
 import { z } from 'zod'
 import { LANES, fromDateInput, toDateInput, typeForStatus } from '#/lib/board'
+import { fieldErrorMessage } from '#/lib/form'
 import type { Card, CardPriority, CardStatus, CardType } from '#/lib/board'
 
 const schema = z.object({
@@ -21,12 +22,6 @@ export type CardFormValues = z.infer<typeof schema>
 export interface CardDraft {
   card?: Card
   status: CardStatus
-}
-
-function fieldError(errors: Array<unknown>) {
-  const first = errors[0] as { message?: string } | string | undefined
-  if (!first) return null
-  return typeof first === 'string' ? first : (first.message ?? null)
 }
 
 export default function CardDialog({
@@ -78,9 +73,7 @@ export default function CardDialog({
         className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-5 shadow-2xl backdrop-blur-xl sm:max-w-lg sm:rounded-3xl"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="ui-title text-lg font-semibold">
-            {card ? 'Edit card' : 'New card'}
-          </h2>
+          <h2 className="ui-title text-lg font-semibold">{card ? 'Edit card' : 'New card'}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -110,11 +103,7 @@ export default function CardDialog({
                       field.handleChange(type)
                       const lane = LANES.find((l) => l.type === type)!
                       form.setFieldValue('status', lane.columns[0].status)
-                      if (
-                        !categories[type].includes(
-                          form.getFieldValue('category'),
-                        )
-                      ) {
+                      if (!categories[type].includes(form.getFieldValue('category'))) {
                         form.setFieldValue('category', categories[type][0])
                       }
                     }}
@@ -134,9 +123,7 @@ export default function CardDialog({
           <form.Field name="description">
             {(field) => (
               <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--sea-ink)]">
-                  Description
-                </span>
+                <span className="font-medium text-[var(--sea-ink)]">Description</span>
                 <input
                   className="ui-input"
                   value={field.state.value}
@@ -153,9 +140,7 @@ export default function CardDialog({
             <form.Field name="amount">
               {(field) => (
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--sea-ink)]">
-                    Amount
-                  </span>
+                  <span className="font-medium text-[var(--sea-ink)]">Amount</span>
                   <input
                     className="ui-input"
                     type="number"
@@ -173,9 +158,7 @@ export default function CardDialog({
             <form.Field name="date">
               {(field) => (
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--sea-ink)]">
-                    Date
-                  </span>
+                  <span className="font-medium text-[var(--sea-ink)]">Date</span>
                   <input
                     className="ui-input"
                     type="date"
@@ -195,9 +178,7 @@ export default function CardDialog({
                 <form.Field name="category">
                   {(field) => (
                     <label className="flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-[var(--sea-ink)]">
-                        Category
-                      </span>
+                      <span className="font-medium text-[var(--sea-ink)]">Category</span>
                       <select
                         className="ui-select"
                         value={field.state.value}
@@ -228,23 +209,17 @@ export default function CardDialog({
                 <form.Field name="status">
                   {(field) => (
                     <label className="flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-[var(--sea-ink)]">
-                        Column
-                      </span>
+                      <span className="font-medium text-[var(--sea-ink)]">Column</span>
                       <select
                         className="ui-select"
                         value={field.state.value}
-                        onChange={(e) =>
-                          field.handleChange(e.target.value as CardStatus)
-                        }
+                        onChange={(e) => field.handleChange(e.target.value as CardStatus)}
                       >
-                        {LANES.find((l) => l.type === type)!.columns.map(
-                          (c) => (
-                            <option key={c.status} value={c.status}>
-                              {c.title}
-                            </option>
-                          ),
-                        )}
+                        {LANES.find((l) => l.type === type)!.columns.map((c) => (
+                          <option key={c.status} value={c.status}>
+                            {c.title}
+                          </option>
+                        ))}
                       </select>
                     </label>
                   )}
@@ -258,10 +233,7 @@ export default function CardDialog({
               {(field) => (
                 <label className="flex flex-col gap-1 text-sm">
                   <span className="font-medium text-[var(--sea-ink)]">
-                    Source{' '}
-                    <span className="text-[var(--sea-ink-soft)]">
-                      (optional)
-                    </span>
+                    Source <span className="text-[var(--sea-ink-soft)]">(optional)</span>
                   </span>
                   <input
                     className="ui-input"
@@ -276,15 +248,11 @@ export default function CardDialog({
             <form.Field name="priority">
               {(field) => (
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--sea-ink)]">
-                    Priority
-                  </span>
+                  <span className="font-medium text-[var(--sea-ink)]">Priority</span>
                   <select
                     className="ui-select"
                     value={field.state.value}
-                    onChange={(e) =>
-                      field.handleChange(e.target.value as CardPriority)
-                    }
+                    onChange={(e) => field.handleChange(e.target.value as CardPriority)}
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -308,9 +276,7 @@ export default function CardDialog({
             )}
           </form.Field>
 
-          <form.Subscribe
-            selector={(state) => [state.canSubmit, state.isSubmitting] as const}
-          >
+          <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>
             {([canSubmit, isSubmitting]) => (
               <div className="mt-2 flex justify-end gap-2">
                 <button
@@ -325,11 +291,7 @@ export default function CardDialog({
                   disabled={!canSubmit || isSubmitting}
                   className="ui-button px-4 py-2"
                 >
-                  {isSubmitting
-                    ? 'Saving…'
-                    : card
-                      ? 'Save changes'
-                      : 'Add card'}
+                  {isSubmitting ? 'Saving…' : card ? 'Save changes' : 'Add card'}
                 </button>
               </div>
             )}
@@ -341,7 +303,7 @@ export default function CardDialog({
 }
 
 function FieldMessage({ errors }: { errors: Array<unknown> }) {
-  const message = fieldError(errors)
+  const message = fieldErrorMessage(errors)
   if (!message) return null
   return <span className="text-xs text-[#b4462f]">{message}</span>
 }

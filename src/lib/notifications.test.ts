@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vite-plus/test'
 import { buildAlerts, pruneDismissed } from './notifications'
 import { DAY } from './board'
 import type { Card } from './board'
@@ -30,9 +30,7 @@ describe('buildAlerts', () => {
   })
 
   test('never nags about a completed card', () => {
-    expect(
-      buildAlerts([card({ date: now - 5 * DAY, status: 'paid' })], now),
-    ).toEqual([])
+    expect(buildAlerts([card({ date: now - 5 * DAY, status: 'paid' })], now)).toEqual([])
   })
 
   test('raises overdue, due-today and due-soon for expenses', () => {
@@ -45,11 +43,7 @@ describe('buildAlerts', () => {
       now,
     )
 
-    expect(alerts.map((a) => a.kind)).toEqual([
-      'overdue',
-      'due-today',
-      'due-soon',
-    ])
+    expect(alerts.map((a) => a.kind)).toEqual(['overdue', 'due-today', 'due-soon'])
   })
 
   test('flags income that was expected and never showed up', () => {
@@ -94,8 +88,6 @@ describe('buildAlerts', () => {
 describe('pruneDismissed', () => {
   test('forgets dismissals whose alert is gone', () => {
     const alerts = buildAlerts([card({ date: now - DAY })], now)
-    expect(pruneDismissed([alerts[0].id, 'stale:id'], alerts)).toEqual([
-      alerts[0].id,
-    ])
+    expect(pruneDismissed([alerts[0].id, 'stale:id'], alerts)).toEqual([alerts[0].id])
   })
 })

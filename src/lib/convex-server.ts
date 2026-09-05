@@ -8,9 +8,7 @@ import { ConvexHttpClient } from 'convex/browser'
 export function getConvexServerClient() {
   const url = process.env.VITE_CONVEX_URL ?? process.env.CONVEX_URL
   if (!url) {
-    throw new Error(
-      'Missing VITE_CONVEX_URL — set it in .env.local (see .env.example)',
-    )
+    throw new Error('Missing VITE_CONVEX_URL — set it in .env.local (see .env.example)')
   }
   return new ConvexHttpClient(url)
 }

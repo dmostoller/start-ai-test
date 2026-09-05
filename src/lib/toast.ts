@@ -26,10 +26,7 @@ export function pushToast(message: string, tone: Toast['tone'] = 'info') {
  * out of date. Convex retries transient errors itself, so anything that lands
  * here is worth telling the user about.
  */
-export async function withToast<T>(
-  promise: Promise<T>,
-  { error }: { error: string },
-) {
+export async function withToast<T>(promise: Promise<T>, { error }: { error: string }) {
   try {
     return await promise
   } catch (cause) {

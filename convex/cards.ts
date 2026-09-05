@@ -19,9 +19,7 @@ async function ownedCard(ctx: MutationCtx, userId: string, id: Id<'cards'>) {
 async function nextOrder(ctx: MutationCtx, userId: string, status: string) {
   const last = await ctx.db
     .query('cards')
-    .withIndex('by_user_status', (q) =>
-      q.eq('userId', userId).eq('status', status as any),
-    )
+    .withIndex('by_user_status', (q) => q.eq('userId', userId).eq('status', status as any))
     .collect()
   return last.reduce((max, c) => Math.max(max, c.order), 0) + 1000
 }
@@ -59,8 +57,7 @@ export const create = mutation({
     status: v.optional(cardStatus),
   },
   handler: async (ctx, args) => {
-    const status =
-      args.status ?? (args.type === 'expense' ? 'upcoming' : 'expected')
+    const status = args.status ?? (args.type === 'expense' ? 'upcoming' : 'expected')
     if (!(statusesForType(args.type) as readonly string[]).includes(status)) {
       throw new Error(`Status "${status}" is not valid for a ${args.type} card`)
     }
@@ -105,9 +102,7 @@ export const update = mutation({
     const type = fields.type ?? card.type
     const patch: Record<string, unknown> = {}
 
-    for (const [key, value] of Object.entries(fields) as Array<
-      [string, unknown]
-    >) {
+    for (const [key, value] of Object.entries(fields) as Array<[string, unknown]>) {
       if (value !== undefined) patch[key] = value
     }
 
@@ -120,9 +115,7 @@ export const update = mutation({
 
     if (patch.status && patch.status !== card.status) {
       patch.order = await nextOrder(ctx, userId, patch.status as string)
-      patch.completedAt = isCompletedStatus(patch.status as string)
-        ? Date.now()
-        : undefined
+      patch.completedAt = isCompletedStatus(patch.status as string) ? Date.now() : undefined
     }
 
     await ctx.db.patch(id, patch)
@@ -159,9 +152,7 @@ export const move = mutation({
     await ctx.db.patch(id, {
       status,
       order,
-      completedAt: isCompletedStatus(status)
-        ? (card.completedAt ?? Date.now())
-        : undefined,
+      completedAt: isCompletedStatus(status) ? (card.completedAt ?? Date.now()) : undefined,
     })
     return id
   },

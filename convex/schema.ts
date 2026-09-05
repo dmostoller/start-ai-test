@@ -13,11 +13,7 @@ export const cardStatus = v.union(
   v.literal('received'),
 )
 
-export const cardPriority = v.union(
-  v.literal('low'),
-  v.literal('medium'),
-  v.literal('high'),
-)
+export const cardPriority = v.union(v.literal('low'), v.literal('medium'), v.literal('high'))
 
 export default defineSchema({
   cards: defineTable({

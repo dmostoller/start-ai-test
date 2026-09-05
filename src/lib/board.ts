@@ -89,10 +89,7 @@ export function formatDate(ms: number) {
   return new Date(ms).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year:
-      new Date(ms).getFullYear() === new Date().getFullYear()
-        ? undefined
-        : 'numeric',
+    year: new Date(ms).getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
   })
 }
 

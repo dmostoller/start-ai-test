@@ -90,16 +90,10 @@ export function filterCards<T extends CardRecord>(
   return cards.filter((card) => {
     if (filters.type && card.type !== filters.type) return false
     if (filters.status && card.status !== filters.status) return false
-    if (
-      filters.category &&
-      card.category.toLowerCase() !== filters.category.toLowerCase()
-    ) {
+    if (filters.category && card.category.toLowerCase() !== filters.category.toLowerCase()) {
       return false
     }
-    if (
-      filters.recurring !== undefined &&
-      card.recurring !== filters.recurring
-    ) {
+    if (filters.recurring !== undefined && card.recurring !== filters.recurring) {
       return false
     }
     if (
@@ -108,15 +102,11 @@ export function filterCards<T extends CardRecord>(
     ) {
       return false
     }
-    if (
-      filters.withinDays !== undefined &&
-      card.date > now + filters.withinDays * DAY
-    ) {
+    if (filters.withinDays !== undefined && card.date > now + filters.withinDays * DAY) {
       return false
     }
     if (search) {
-      const haystack =
-        `${card.description} ${card.source ?? ''} ${card.category}`.toLowerCase()
+      const haystack = `${card.description} ${card.source ?? ''} ${card.category}`.toLowerCase()
       if (!haystack.includes(search)) return false
     }
     return true
@@ -140,23 +130,17 @@ export function createBoardTools(userId: string) {
       amount: z.number().describe('Dollar amount, always positive'),
       description: z.string().describe('Short label, e.g. "Rent" or "Netflix"'),
       date: dateSchema,
-      category: z
-        .string()
-        .describe('Category name. Call suggestCategory first if unsure.'),
+      category: z.string().describe('Category name. Call suggestCategory first if unsure.'),
       priority: prioritySchema.optional(),
       recurring: z
         .boolean()
         .optional()
         .describe('True for subscriptions, rent, salary and other repeats'),
-      source: z
-        .string()
-        .optional()
-        .describe('Payee or payer, e.g. "Netflix" or "Employer"'),
+      source: z.string().optional().describe('Payee or payer, e.g. "Netflix" or "Employer"'),
       status: statusSchema
         .optional()
         .describe(
-          'Column to place the card in. Defaults to upcoming (expense) or ' +
-            'expected (income).',
+          'Column to place the card in. Defaults to upcoming (expense) or ' + 'expected (income).',
         ),
     }),
     outputSchema: z.object({ id: z.string(), summary: z.string() }),
@@ -176,8 +160,7 @@ export function createBoardTools(userId: string) {
 
   const updateCard = toolDefinition({
     name: 'updateCard',
-    description:
-      'Update fields on an existing card. Call listCards first to find the id.',
+    description: 'Update fields on an existing card. Call listCards first to find the id.',
     inputSchema: z.object({
       id: z.string(),
       type: cardTypeSchema.optional(),
@@ -269,10 +252,7 @@ export function createBoardTools(userId: string) {
       'Get totals for the board: upcoming expenses, expected income, net ' +
       'balance, overdue and due-soon counts.',
     inputSchema: z.object({
-      withinDays: z
-        .number()
-        .optional()
-        .describe('Time horizon in days. Defaults to 30.'),
+      withinDays: z.number().optional().describe('Time horizon in days. Defaults to 30.'),
     }),
     outputSchema: z.object({
       upcomingExpenses: z.number(),
@@ -302,15 +282,7 @@ export function createBoardTools(userId: string) {
     return { categories: categories[type] }
   })
 
-  return [
-    createCard,
-    updateCard,
-    moveCard,
-    deleteCard,
-    listCards,
-    queryBalance,
-    suggestCategory,
-  ]
+  return [createCard, updateCard, moveCard, deleteCard, listCards, queryBalance, suggestCategory]
 }
 
 export function boardSystemPrompt(now = new Date()) {

@@ -1,5 +1,5 @@
 import { convexTest } from 'convex-test'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vite-plus/test'
 import schema from './schema'
 import { api } from './_generated/api'
 
@@ -55,35 +55,29 @@ describe('cards.create', () => {
 
   test('stamps completedAt when a card starts out paid', async () => {
     const t = setup()
-    const id = await t.mutation(
-      api.cards.create,
-      expenseArgs({ status: 'paid' }),
-    )
+    const id = await t.mutation(api.cards.create, expenseArgs({ status: 'paid' }))
     const card = await t.query(api.cards.get, { userId: USER, id })
     expect(card?.completedAt).toEqual(expect.any(Number))
   })
 
   test('rejects a status from the other swimlane', async () => {
     const t = setup()
-    await expect(
-      t.mutation(api.cards.create, expenseArgs({ status: 'received' })),
-    ).rejects.toThrow(/not valid for a expense card/)
+    await expect(t.mutation(api.cards.create, expenseArgs({ status: 'received' }))).rejects.toThrow(
+      /not valid for a expense card/,
+    )
   })
 
   test('rejects a negative amount', async () => {
     const t = setup()
-    await expect(
-      t.mutation(api.cards.create, expenseArgs({ amount: -5 })),
-    ).rejects.toThrow(/positive/)
+    await expect(t.mutation(api.cards.create, expenseArgs({ amount: -5 }))).rejects.toThrow(
+      /positive/,
+    )
   })
 
   test('appends new cards to the end of their column', async () => {
     const t = setup()
     const first = await t.mutation(api.cards.create, expenseArgs())
-    const second = await t.mutation(
-      api.cards.create,
-      expenseArgs({ description: 'Power' }),
-    )
+    const second = await t.mutation(api.cards.create, expenseArgs({ description: 'Power' }))
 
     const cards = await t.query(api.cards.list, { userId: USER })
     expect(cards.map((c) => c._id)).toEqual([first, second])
@@ -130,10 +124,7 @@ describe('cards.update', () => {
 
   test('clears completedAt when a paid card is reopened', async () => {
     const t = setup()
-    const id = await t.mutation(
-      api.cards.create,
-      expenseArgs({ status: 'paid' }),
-    )
+    const id = await t.mutation(api.cards.create, expenseArgs({ status: 'paid' }))
     await t.mutation(api.cards.update, { userId: USER, id, status: 'due' })
 
     const card = await t.query(api.cards.get, { userId: USER, id })
@@ -152,27 +143,18 @@ describe('cards.update', () => {
   test('refuses to touch another user’s card', async () => {
     const t = setup()
     const id = await t.mutation(api.cards.create, expenseArgs())
-    await expect(
-      t.mutation(api.cards.update, { userId: OTHER, id, amount: 1 }),
-    ).rejects.toThrow(/not found/i)
+    await expect(t.mutation(api.cards.update, { userId: OTHER, id, amount: 1 })).rejects.toThrow(
+      /not found/i,
+    )
   })
 })
 
 describe('cards.move', () => {
   test('drops a card between two others', async () => {
     const t = setup()
-    const a = await t.mutation(
-      api.cards.create,
-      expenseArgs({ description: 'A' }),
-    )
-    const b = await t.mutation(
-      api.cards.create,
-      expenseArgs({ description: 'B' }),
-    )
-    const c = await t.mutation(
-      api.cards.create,
-      expenseArgs({ description: 'C' }),
-    )
+    const a = await t.mutation(api.cards.create, expenseArgs({ description: 'A' }))
+    const b = await t.mutation(api.cards.create, expenseArgs({ description: 'B' }))
+    const c = await t.mutation(api.cards.create, expenseArgs({ description: 'C' }))
 
     const before = await t.query(api.cards.list, { userId: USER })
     const orders = new Map(before.map((card) => [card._id, card.order]))
@@ -192,14 +174,8 @@ describe('cards.move', () => {
 
   test('drops a card at the top of a column', async () => {
     const t = setup()
-    const a = await t.mutation(
-      api.cards.create,
-      expenseArgs({ description: 'A' }),
-    )
-    const b = await t.mutation(
-      api.cards.create,
-      expenseArgs({ description: 'B' }),
-    )
+    const a = await t.mutation(api.cards.create, expenseArgs({ description: 'A' }))
+    const b = await t.mutation(api.cards.create, expenseArgs({ description: 'B' }))
     const [first] = await t.query(api.cards.list, { userId: USER })
 
     await t.mutation(api.cards.move, {
@@ -223,10 +199,7 @@ describe('cards.move', () => {
 
   test('keeps the original completedAt when reordering inside paid', async () => {
     const t = setup()
-    const id = await t.mutation(
-      api.cards.create,
-      expenseArgs({ status: 'paid' }),
-    )
+    const id = await t.mutation(api.cards.create, expenseArgs({ status: 'paid' }))
     const first = await t.query(api.cards.get, { userId: USER, id })
 
     await t.mutation(api.cards.move, { userId: USER, id, status: 'paid' })
@@ -247,17 +220,12 @@ describe('cards.remove and repeat', () => {
   test('refuses to remove another user’s card', async () => {
     const t = setup()
     const id = await t.mutation(api.cards.create, expenseArgs())
-    await expect(
-      t.mutation(api.cards.remove, { userId: OTHER, id }),
-    ).rejects.toThrow(/not found/i)
+    await expect(t.mutation(api.cards.remove, { userId: OTHER, id })).rejects.toThrow(/not found/i)
   })
 
   test('repeat copies a paid card forward into a fresh column', async () => {
     const t = setup()
-    const id = await t.mutation(
-      api.cards.create,
-      expenseArgs({ status: 'paid', recurring: true }),
-    )
+    const id = await t.mutation(api.cards.create, expenseArgs({ status: 'paid', recurring: true }))
     const original = await t.query(api.cards.get, { userId: USER, id })
 
     const copyId = await t.mutation(api.cards.repeat, { userId: USER, id })
@@ -278,25 +246,13 @@ describe('cards.stats', () => {
   test('totals open cards inside the horizon and counts what is late', async () => {
     const t = setup()
     // overdue expense
-    await t.mutation(
-      api.cards.create,
-      expenseArgs({ amount: 100, date: Date.now() - 2 * DAY }),
-    )
+    await t.mutation(api.cards.create, expenseArgs({ amount: 100, date: Date.now() - 2 * DAY }))
     // due within the week
-    await t.mutation(
-      api.cards.create,
-      expenseArgs({ amount: 50, date: Date.now() + 3 * DAY }),
-    )
+    await t.mutation(api.cards.create, expenseArgs({ amount: 50, date: Date.now() + 3 * DAY }))
     // beyond the 30 day horizon
-    await t.mutation(
-      api.cards.create,
-      expenseArgs({ amount: 999, date: Date.now() + 90 * DAY }),
-    )
+    await t.mutation(api.cards.create, expenseArgs({ amount: 999, date: Date.now() + 90 * DAY }))
     // already paid, so not part of what is owed
-    await t.mutation(
-      api.cards.create,
-      expenseArgs({ amount: 70, status: 'paid' }),
-    )
+    await t.mutation(api.cards.create, expenseArgs({ amount: 70, status: 'paid' }))
     // income
     await t.mutation(
       api.cards.create,
@@ -324,17 +280,11 @@ describe('cards.stats', () => {
 
   test('widening the horizon pulls in later cards', async () => {
     const t = setup()
-    await t.mutation(
-      api.cards.create,
-      expenseArgs({ amount: 999, date: Date.now() + 90 * DAY }),
-    )
+    await t.mutation(api.cards.create, expenseArgs({ amount: 999, date: Date.now() + 90 * DAY }))
 
+    expect((await t.query(api.cards.stats, { userId: USER })).upcomingExpenses).toBe(0)
     expect(
-      (await t.query(api.cards.stats, { userId: USER })).upcomingExpenses,
-    ).toBe(0)
-    expect(
-      (await t.query(api.cards.stats, { userId: USER, horizonDays: 120 }))
-        .upcomingExpenses,
+      (await t.query(api.cards.stats, { userId: USER, horizonDays: 120 })).upcomingExpenses,
     ).toBe(999)
   })
 })

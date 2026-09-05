@@ -103,30 +103,18 @@ export default function Board({ userId }: { userId: string }) {
     const lane = LANES.find((l) => l.type === card.type)!
     if (!lane.columns.some((c) => c.status === targetStatus)) {
       // Income cards cannot land in expense columns and vice versa.
-      pushToast(
-        `A ${card.type} card can only move between its own columns`,
-        'error',
-      )
+      pushToast(`A ${card.type} card can only move between its own columns`, 'error')
       return
     }
 
-    const column = (byStatus.get(targetStatus) ?? []).filter(
-      (c) => c._id !== card._id,
-    )
+    const column = (byStatus.get(targetStatus) ?? []).filter((c) => c._id !== card._id)
     const overCard = over.data.current?.card as Card | undefined
-    const index = overCard
-      ? column.findIndex((c) => c._id === overCard._id)
-      : column.length
+    const index = overCard ? column.findIndex((c) => c._id === overCard._id) : column.length
 
     const after = index > 0 ? column[index - 1] : undefined
-    const before =
-      index >= 0 && index < column.length ? column[index] : undefined
+    const before = index >= 0 && index < column.length ? column[index] : undefined
 
-    if (
-      card.status === targetStatus &&
-      before?._id === card._id &&
-      after === undefined
-    ) {
+    if (card.status === targetStatus && before?._id === card._id && after === undefined) {
       return
     }
 
@@ -145,10 +133,9 @@ export default function Board({ userId }: { userId: string }) {
   async function submitCard(values: CardFormValues) {
     const args = toCardMutationArgs(values)
     if (draft?.card) {
-      await withToast(
-        updateCard({ userId, id: draft.card._id as Id<'cards'>, ...args }),
-        { error: 'Could not save your changes' },
-      )
+      await withToast(updateCard({ userId, id: draft.card._id as Id<'cards'>, ...args }), {
+        error: 'Could not save your changes',
+      })
     } else {
       await withToast(createCard({ userId, ...args }), {
         error: 'Could not create the card',
@@ -175,10 +162,9 @@ export default function Board({ userId }: { userId: string }) {
               className="ui-select ui-input-fit"
               value={horizonDays}
               onChange={(e) =>
-                void withToast(
-                  saveSettings({ userId, horizonDays: Number(e.target.value) }),
-                  { error: 'Could not save your horizon' },
-                )
+                void withToast(saveSettings({ userId, horizonDays: Number(e.target.value) }), {
+                  error: 'Could not save your horizon',
+                })
               }
             >
               {HORIZON_OPTIONS.map((o) => (
@@ -194,10 +180,9 @@ export default function Board({ userId }: { userId: string }) {
               type="checkbox"
               checked={showCompleted}
               onChange={(e) =>
-                void withToast(
-                  saveSettings({ userId, showCompleted: e.target.checked }),
-                  { error: 'Could not save that setting' },
-                )
+                void withToast(saveSettings({ userId, showCompleted: e.target.checked }), {
+                  error: 'Could not save that setting',
+                })
               }
             />
             Show completed
@@ -243,12 +228,10 @@ export default function Board({ userId }: { userId: string }) {
 
       {boardIsEmpty ? (
         <div className="mb-6 rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center">
-          <h2 className="text-base font-semibold text-[var(--sea-ink)]">
-            Your board is empty
-          </h2>
+          <h2 className="text-base font-semibold text-[var(--sea-ink)]">Your board is empty</h2>
           <p className="mx-auto mt-1 max-w-md text-sm text-[var(--sea-ink-soft)]">
-            Tell the assistant something like “rent $1200 due on the 15th” and
-            it will fill the board in for you — or add the first card yourself.
+            Tell the assistant something like “rent $1200 due on the 15th” and it will fill the
+            board in for you — or add the first card yourself.
           </p>
           <div className="mt-4 flex justify-center gap-2">
             <button
@@ -287,9 +270,7 @@ export default function Board({ userId }: { userId: string }) {
                 </h2>
                 <div
                   className={`grid gap-3 ${
-                    lane.columns.length === 3
-                      ? 'md:grid-cols-3'
-                      : 'md:grid-cols-2'
+                    lane.columns.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'
                   }`}
                 >
                   {lane.columns.map((column) => (
@@ -316,9 +297,7 @@ export default function Board({ userId }: { userId: string }) {
                           repeatCard({
                             userId,
                             id: card._id as Id<'cards'>,
-                          }).then(() =>
-                            pushToast(`Copied "${card.description}" forward`),
-                          ),
+                          }).then(() => pushToast(`Copied "${card.description}" forward`)),
                           { error: 'Could not repeat that card' },
                         )
                       }}
@@ -329,9 +308,7 @@ export default function Board({ userId }: { userId: string }) {
             ))}
           </div>
 
-          <DragOverlay>
-            {activeCard ? <CardFace card={activeCard} dragging /> : null}
-          </DragOverlay>
+          <DragOverlay>{activeCard ? <CardFace card={activeCard} dragging /> : null}</DragOverlay>
         </DndContext>
       )}
 
@@ -341,9 +318,7 @@ export default function Board({ userId }: { userId: string }) {
           categories={categories}
           onClose={() => setDraft(null)}
           onSubmit={submitCard}
-          onAddCategory={(name: string, type: CardType) =>
-            addCategory({ userId, name, type })
-          }
+          onAddCategory={(name: string, type: CardType) => addCategory({ userId, name, type })}
         />
       ) : null}
 

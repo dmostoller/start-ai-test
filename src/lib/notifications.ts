@@ -36,10 +36,7 @@ function sameDay(a: number, b: number) {
  * status, which means dismissing an alert hides *that* state — if the bill
  * slips another week, it speaks up again.
  */
-export function buildAlerts(
-  cards: Array<Card>,
-  now = Date.now(),
-): Array<Alert> {
+export function buildAlerts(cards: Array<Card>, now = Date.now()): Array<Alert> {
   const alerts: Array<Alert> = []
 
   for (const card of cards) {
@@ -86,9 +83,7 @@ export function buildAlerts(
     }
   }
 
-  return alerts.sort(
-    (a, b) => KIND_WEIGHT[a.kind] - KIND_WEIGHT[b.kind] || a.date - b.date,
-  )
+  return alerts.sort((a, b) => KIND_WEIGHT[a.kind] - KIND_WEIGHT[b.kind] || a.date - b.date)
 }
 
 const STORAGE_KEY = 'budget-board:dismissed-alerts'
