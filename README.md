@@ -20,7 +20,7 @@ Built to the spec in [PLAN.md](./PLAN.md).
 | Drag & drop | dnd-kit (pointer, touch and keyboard)                |
 | Styling     | Tailwind CSS v4, light/dark themed with CSS vars     |
 | Tests       | Vitest + `convex-test`                               |
-| Deploy      | Netlify preset (swap for Vercel — see below)         |
+| Deploy      | Vercel (Nitro), Convex prod, Neon Postgres           |
 
 ## What the app does
 
@@ -147,20 +147,27 @@ src/
   routes/               / (board), /signin, /settings, /api/ai/chat, /api/auth/$
 ```
 
-## Deploying to Vercel
+## Deploying
 
-The project was scaffolded with the Netlify preset because the TanStack CLI does
-not offer Vercel yet. To move it:
+[DEPLOYMENT.md](./DEPLOYMENT.md) is the full runbook: Convex, Neon, Google
+OAuth, Gemini keys and the Vercel project, in the order they need to happen.
 
-1. `npm rm @netlify/vite-plugin-tanstack-start`, drop `netlify()` from
-   `vite.config.ts`, and delete `netlify.toml`.
-2. Add the Vercel preset per the TanStack Start deployment docs.
-3. Set the same environment variables in the Vercel project, and point
-   `BETTER_AUTH_URL` (plus the Google OAuth redirect URI) at the deployed
-   origin.
+The short version, once the accounts exist:
+
+- Vercel build command: `npx convex deploy --cmd 'npm run build'`
+- Environment: `CONVEX_DEPLOY_KEY`, `DATABASE_URL`, `BETTER_AUTH_SECRET`,
+  `BETTER_AUTH_URL`, `GEMINI_API_KEY` (plus the Google pair, if used)
+
+`vite.config.ts` uses the Nitro plugin, which picks the Vercel preset from
+`VERCEL=1` at build time and a plain Node server otherwise — so
+`npm run build && node .output/server/index.mjs` previews the real production
+server locally.
 
 ## Known deviations from the plan
 
+- **Netlify → Vercel** — the TanStack CLI has no Vercel option, so the scaffold
+  shipped the Netlify plugin. It has been swapped for the Nitro plugin, which
+  covers Vercel and plain Node from one config.
 - **shadcn/ui** — the UI is built on the scaffold's own themed CSS layer
   (`src/styles.css`, the `ui-*` classes) rather than shadcn components. Both
   give the same light/dark behaviour; this avoided re-skinning a finished UI.
