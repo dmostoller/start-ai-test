@@ -2,7 +2,7 @@ import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
 import { api } from '../../convex/_generated/api'
 import { getConvexServerClient } from './convex-server'
-import { DAY, formatCurrency, formatDate } from './board'
+import { DAY, formatCurrency, formatDate, fromDateInput } from './board'
 import type { Id } from '../../convex/_generated/dataModel'
 
 const cardTypeSchema = z.enum(['income', 'expense'])
@@ -18,9 +18,11 @@ const dateSchema = z
 
 /** Parse a YYYY-MM-DD string at local noon so the day never shifts. */
 function parseDate(value: string) {
-  const [y, m, d] = value.split('-').map(Number)
-  if (!y || !m || !d) throw new Error(`Invalid date: ${value}`)
-  return new Date(y, m - 1, d, 12).getTime()
+  const ms = fromDateInput(value)
+  if (Number.isNaN(ms)) {
+    throw new Error(`Invalid date "${value}" — expected YYYY-MM-DD`)
+  }
+  return ms
 }
 
 const cardSummary = z.object({
@@ -35,6 +37,16 @@ const cardSummary = z.object({
   source: z.string().optional(),
   status: statusSchema,
 })
+
+export interface CardFilters {
+  type?: 'income' | 'expense'
+  status?: z.infer<typeof statusSchema>
+  category?: string
+  recurring?: boolean
+  search?: string
+  withinDays?: number
+  includeCompleted?: boolean
+}
 
 type CardRecord = {
   _id: string
@@ -62,6 +74,53 @@ function summarize(card: CardRecord) {
     source: card.source,
     status: card.status,
   }
+}
+
+/**
+ * The filtering behind the `listCards` tool, kept pure so it can be tested
+ * without a Convex deployment.
+ */
+export function filterCards<T extends CardRecord>(
+  cards: Array<T>,
+  filters: CardFilters,
+  now = Date.now(),
+): Array<T> {
+  const search = filters.search?.toLowerCase()
+
+  return cards.filter((card) => {
+    if (filters.type && card.type !== filters.type) return false
+    if (filters.status && card.status !== filters.status) return false
+    if (
+      filters.category &&
+      card.category.toLowerCase() !== filters.category.toLowerCase()
+    ) {
+      return false
+    }
+    if (
+      filters.recurring !== undefined &&
+      card.recurring !== filters.recurring
+    ) {
+      return false
+    }
+    if (
+      filters.includeCompleted === false &&
+      (card.status === 'paid' || card.status === 'received')
+    ) {
+      return false
+    }
+    if (
+      filters.withinDays !== undefined &&
+      card.date > now + filters.withinDays * DAY
+    ) {
+      return false
+    }
+    if (search) {
+      const haystack =
+        `${card.description} ${card.source ?? ''} ${card.category}`.toLowerCase()
+      if (!haystack.includes(search)) return false
+    }
+    return true
+  })
 }
 
 /**
@@ -199,43 +258,7 @@ export function createBoardTools(userId: string) {
     const cards: Array<CardRecord> = await convex.query(api.cards.list, {
       userId,
     })
-    const now = Date.now()
-    const search = filters.search?.toLowerCase()
-
-    const matched = cards.filter((card) => {
-      if (filters.type && card.type !== filters.type) return false
-      if (filters.status && card.status !== filters.status) return false
-      if (
-        filters.category &&
-        card.category.toLowerCase() !== filters.category.toLowerCase()
-      ) {
-        return false
-      }
-      if (
-        filters.recurring !== undefined &&
-        card.recurring !== filters.recurring
-      ) {
-        return false
-      }
-      if (
-        filters.includeCompleted === false &&
-        (card.status === 'paid' || card.status === 'received')
-      ) {
-        return false
-      }
-      if (
-        filters.withinDays !== undefined &&
-        card.date > now + filters.withinDays * DAY
-      ) {
-        return false
-      }
-      if (search) {
-        const haystack =
-          `${card.description} ${card.source ?? ''} ${card.category}`.toLowerCase()
-        if (!haystack.includes(search)) return false
-      }
-      return true
-    })
+    const matched = filterCards(cards, filters)
 
     return { count: matched.length, cards: matched.map(summarize) }
   })

@@ -85,7 +85,7 @@ export default function AISidebar({
   open: boolean
   onClose: () => void
 }) {
-  const { messages, sendMessage, status } = useBoardChat()
+  const { messages, sendMessage, status, error } = useBoardChat()
   const [input, setInput] = useState('')
 
   const busy = status === 'streaming' || status === 'submitted'
@@ -123,6 +123,13 @@ export default function AISidebar({
         </header>
 
         <Messages messages={messages} />
+
+        {error ? (
+          <p className="mx-4 mb-2 rounded-xl border border-[rgba(226,114,91,0.5)] bg-[rgba(226,114,91,0.14)] px-3 py-2 text-xs text-[#b4462f]">
+            {error.message ||
+              'The assistant is unavailable. Check GEMINI_API_KEY on the server.'}
+          </p>
+        ) : null}
 
         {messages.length === 0 ? (
           <div className="flex flex-wrap gap-2 px-4 pb-2">

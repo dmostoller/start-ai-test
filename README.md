@@ -16,17 +16,34 @@ Built to the spec in [PLAN.md](./PLAN.md).
 | AI          | TanStack AI + `@tanstack/ai-gemini`                  |
 | Auth        | Better Auth (email/password + optional Google OAuth) |
 | Forms       | TanStack Form + Zod v4                               |
-| Drag & drop | dnd-kit                                              |
+| State       | TanStack Store (toasts)                              |
+| Drag & drop | dnd-kit (pointer, touch and keyboard)                |
 | Styling     | Tailwind CSS v4, light/dark themed with CSS vars     |
+| Tests       | Vitest + `convex-test`                               |
 | Deploy      | Netlify preset (swap for Vercel — see below)         |
 
-## Board shape
+## What the app does
 
-- **Expenses** swimlane: `upcoming` → `due` → `paid`
-- **Income** swimlane: `expected` → `received`
-
-Cards only move within their own lane. The rolling horizon (1 week … 1 year)
-and the show/hide-completed toggle are per-user settings stored in Convex.
+- **Two swimlanes.** Expenses run `upcoming → due → paid`; income runs
+  `expected → received`. A card can only move between its own lane's columns.
+- **Drag and drop** with fractional ordering, so dropping between two cards is
+  a single patch and every other tab sees it immediately.
+- **Info bar** with expected income, upcoming expenses, net balance, overdue
+  and due-this-week counts, all scoped to the rolling horizon.
+- **Reminders** in the header bell: overdue bills, due today, due this week,
+  and income that never arrived. Alerts are derived from the cards themselves,
+  so they can't go stale; dismissing one hides that exact state, and it speaks
+  up again if the date slips.
+- **Card editor** (click any card) with validation, inline creation of custom
+  categories, and a column picker.
+- **Recurring cards** carry a badge and a one-click "copy forward" that clones
+  the card into the next month.
+- **Settings** page for the time horizon, showing/hiding completed cards, and
+  managing custom categories.
+- **AI assistant** in the right sidebar for creating, editing, moving and
+  querying cards.
+- Light/dark/system theme, responsive down to a phone, and toasts whenever a
+  write fails instead of a silently stale board.
 
 ## Getting started
 
@@ -44,6 +61,7 @@ Copy `.env.example` to `.env.local` and fill in:
 | `VITE_CONVEX_URL`         | Convex deployment URL (browser **and** AI tools)    |
 | `BETTER_AUTH_URL`         | App origin, e.g. `http://localhost:3000`            |
 | `BETTER_AUTH_SECRET`      | `npx -y @better-auth/cli secret`                    |
+| `DATABASE_URL`            | Postgres for Better Auth — required in production   |
 | `GOOGLE_CLIENT_ID/SECRET` | Optional; enables the "Continue with Google" button |
 | `GEMINI_API_KEY`          | Required for the AI assistant                       |
 | `GEMINI_MODEL`            | Defaults to `gemini-2.5-flash`                      |
@@ -52,16 +70,48 @@ Copy `.env.example` to `.env.local` and fill in:
 changes in `convex/` to reach the deployment; it also regenerates
 `convex/_generated/`.
 
+### Auth storage
+
+Convex holds the board; Better Auth needs its own store for users, sessions and
+OAuth accounts. Point `DATABASE_URL` at any Postgres (Neon, Supabase, RDS…) and
+run the migration once:
+
+```bash
+npx -y @better-auth/cli migrate
+```
+
+Without `DATABASE_URL` the app falls back to Better Auth's in-memory store and
+warns on boot — fine for a first local run, but accounts vanish on restart. In
+production the server refuses to start without it rather than quietly losing
+accounts.
+
 ## Scripts
 
-| Script               | Does                       |
-| -------------------- | -------------------------- |
-| `npm run dev`        | Dev server on port 3000    |
-| `npm run build`      | Production build           |
-| `npm run typecheck`  | `tsc --noEmit`             |
-| `npm run lint`       | ESLint                     |
-| `npm run format`     | Prettier + `eslint --fix`  |
-| `npm run convex:dev` | Convex dev/codegen watcher |
+| Script               | Does                                     |
+| -------------------- | ---------------------------------------- |
+| `npm run dev`        | Dev server on port 3000                  |
+| `npm run build`      | Production build                         |
+| `npm test`           | Vitest (Convex functions + client logic) |
+| `npm run test:watch` | Vitest in watch mode                     |
+| `npm run typecheck`  | `tsc --noEmit`                           |
+| `npm run lint`       | ESLint                                   |
+| `npm run format`     | Prettier + `eslint --fix`                |
+| `npm run convex:dev` | Convex dev/codegen watcher               |
+
+CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests and the build on
+every push and pull request.
+
+## Tests
+
+`convex-test` runs the Convex functions in-memory, so the data layer is covered
+without a deployment: column rules, `completedAt` stamping, fractional
+reordering, per-user isolation, the stats maths, categories and settings.
+Client-side coverage is the pure logic — date handling, urgency, reminder
+derivation, the assistant's card filter and the toast queue.
+
+```bash
+npm test
+```
 
 ## How the AI writes to the board
 
@@ -72,23 +122,29 @@ tools (`createCard`, `updateCard`, `moveCard`, `deleteCard`, `listCards`,
 `ConvexHttpClient`, so a write made by the assistant streams straight back into
 the board's live queries — no refetch, no optimistic patching.
 
-The chat transcript is persisted to `localStorage` by the TanStack AI client
-(`src/lib/ai-chat.ts`), so a reload or a dropped connection keeps the thread.
+The system prompt pins today's date so "the 15th" and "next Friday" resolve
+correctly, and the chat transcript is persisted to `localStorage` by the
+TanStack AI client (`src/lib/ai-chat.ts`), so a reload or a dropped connection
+keeps the thread.
 
 ## Layout
 
 ```
 convex/
-  schema.ts       cards, categories, settings
-  cards.ts        list / get / create / update / move / remove / repeat / stats
-  categories.ts   default + custom categories
-  settings.ts     horizon and show-completed, per user
+  schema.ts        cards, categories, settings
+  cards.ts         list / get / create / update / move / remove / repeat / stats
+  categories.ts    default + custom categories
+  settings.ts      horizon and show-completed, per user
+  *.test.ts        convex-test coverage of the above
 src/
-  lib/board.ts        shared lane/column/format vocabulary
-  lib/ai-tools.ts     server-side AI tools over Convex
-  lib/ai-chat.ts      client chat hook (SSE + persistence)
-  components/board/   Board, Column, BoardCard, CardDialog, StatsBar, AISidebar
-  routes/             / (board), /signin, /api/ai/chat, /api/auth/$
+  lib/board.ts          shared lane/column/format vocabulary
+  lib/notifications.ts  reminder derivation and dismissal
+  lib/ai-tools.ts       server-side AI tools over Convex
+  lib/ai-chat.ts        client chat hook (SSE + persistence)
+  lib/toast.ts          toast store + mutation error wrapper
+  components/board/     Board, Column, BoardCard, CardDialog, StatsBar,
+                        AISidebar, NotificationsBell
+  routes/               / (board), /signin, /settings, /api/ai/chat, /api/auth/$
 ```
 
 ## Deploying to Vercel
@@ -103,36 +159,25 @@ not offer Vercel yet. To move it:
    `BETTER_AUTH_URL` (plus the Google OAuth redirect URI) at the deployed
    origin.
 
-## Before production: give Better Auth a database
+## Known deviations from the plan
 
-Better Auth is running on its default in-memory store, which is fine locally but
-drops every account when the server restarts. Pick a database and pass it to
-`betterAuth()` in `src/lib/auth.ts` — for Postgres:
-
-```bash
-npm i pg
-```
-
-```ts
-import { Pool } from 'pg'
-
-export const auth = betterAuth({
-  database: new Pool({ connectionString: process.env.DATABASE_URL }),
-  // …rest unchanged
-})
-```
-
-then run `npx @better-auth/cli migrate` to create the auth tables.
-
-Related: Convex functions take `userId` as an argument and scope every read and
-write to it. Server-side callers (the AI tools) pass the verified session id,
-but a determined browser client could pass another id. Wiring
-`@convex-dev/better-auth` so Convex verifies the session itself is the hardening
-step — it needs a live Convex deployment to install, so it is left as the first
-follow-up.
+- **shadcn/ui** — the UI is built on the scaffold's own themed CSS layer
+  (`src/styles.css`, the `ui-*` classes) rather than shadcn components. Both
+  give the same light/dark behaviour; this avoided re-skinning a finished UI.
+- **Durable streams** — the assistant uses SSE plus client-side transcript
+  persistence rather than TanStack AI's run-store resume. Same practical
+  resilience across reloads and dropped connections, without depending on
+  server-side run storage.
+- **Convex trusts the `userId` argument.** Every query and mutation is scoped by
+  it, and server-side callers pass the verified session id, but a crafted
+  browser client could pass someone else's. Closing this means letting Convex
+  verify the session itself — either `@convex-dev/better-auth` (currently pinned
+  to `better-auth <1.7`, which this project is past) or the Better Auth JWT
+  plugin with a `convex/auth.config.ts` provider, which needs a publicly
+  reachable JWKS URL. Both need a live Convex deployment to set up.
 
 ## Not in V1
 
-Recurring auto-generation (the `cards.repeat` mutation exists but nothing
+Recurring auto-generation (the card copies forward on request; nothing
 schedules it), email/push notifications, budget goals, CSV export and shared
 boards — see the end of [PLAN.md](./PLAN.md).

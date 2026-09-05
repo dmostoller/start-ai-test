@@ -12,6 +12,7 @@ export default function Column({
   onAdd,
   onOpen,
   onDelete,
+  onRepeat,
 }: {
   status: CardStatus
   title: string
@@ -19,6 +20,7 @@ export default function Column({
   onAdd: () => void
   onOpen: (card: Card) => void
   onDelete: (card: Card) => void
+  onRepeat: (card: Card) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `column:${status}`,
@@ -71,6 +73,7 @@ export default function Column({
               card={card}
               onOpen={() => onOpen(card)}
               onDelete={() => onDelete(card)}
+              onRepeat={() => onRepeat(card)}
             />
           ))}
           {cards.length === 0 ? (

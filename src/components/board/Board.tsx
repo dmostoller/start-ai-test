@@ -2,22 +2,27 @@ import { useMemo, useState } from 'react'
 import {
   DndContext,
   DragOverlay,
+  KeyboardSensor,
   PointerSensor,
   TouchSensor,
   closestCorners,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { useMutation, useQuery } from 'convex/react'
-import { Bot, Plus } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { Bot, Plus, Settings } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import Column from './Column'
 import StatsBar from './StatsBar'
 import AISidebar from './AISidebar'
+import NotificationsBell from './NotificationsBell'
 import CardDialog, { toCardMutationArgs } from './CardDialog'
 import { CardFace } from './BoardCard'
 import { DAY, HORIZON_OPTIONS, LANES, isCompleted } from '#/lib/board'
+import { pushToast, withToast } from '#/lib/toast'
 import type { Card, CardStatus, CardType } from '#/lib/board'
 import type { CardDraft, CardFormValues } from './CardDialog'
 import type { Id } from '../../../convex/_generated/dataModel'
@@ -35,6 +40,7 @@ export default function Board({ userId }: { userId: string }) {
   const updateCard = useMutation(api.cards.update)
   const moveCard = useMutation(api.cards.move)
   const removeCard = useMutation(api.cards.remove)
+  const repeatCard = useMutation(api.cards.repeat)
   const addCategory = useMutation(api.categories.add)
   const saveSettings = useMutation(api.settings.set)
 
@@ -49,6 +55,10 @@ export default function Board({ userId }: { userId: string }) {
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, {
       activationConstraint: { delay: 150, tolerance: 6 },
+    }),
+    // Cards can also be picked up and moved with the keyboard.
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
     }),
   )
 
@@ -93,6 +103,10 @@ export default function Board({ userId }: { userId: string }) {
     const lane = LANES.find((l) => l.type === card.type)!
     if (!lane.columns.some((c) => c.status === targetStatus)) {
       // Income cards cannot land in expense columns and vice versa.
+      pushToast(
+        `A ${card.type} card can only move between its own columns`,
+        'error',
+      )
       return
     }
 
@@ -116,23 +130,33 @@ export default function Board({ userId }: { userId: string }) {
       return
     }
 
-    await moveCard({
-      userId,
-      id: card._id as Id<'cards'>,
-      status: targetStatus,
-      afterOrder: after?.order,
-      beforeOrder: before?.order,
-    })
+    await withToast(
+      moveCard({
+        userId,
+        id: card._id as Id<'cards'>,
+        status: targetStatus,
+        afterOrder: after?.order,
+        beforeOrder: before?.order,
+      }),
+      { error: `Could not move "${card.description}"` },
+    )
   }
 
   async function submitCard(values: CardFormValues) {
     const args = toCardMutationArgs(values)
     if (draft?.card) {
-      await updateCard({ userId, id: draft.card._id as Id<'cards'>, ...args })
+      await withToast(
+        updateCard({ userId, id: draft.card._id as Id<'cards'>, ...args }),
+        { error: 'Could not save your changes' },
+      )
     } else {
-      await createCard({ userId, ...args })
+      await withToast(createCard({ userId, ...args }), {
+        error: 'Could not create the card',
+      })
     }
   }
+
+  const boardIsEmpty = cards !== undefined && cards.length === 0
 
   return (
     <div className="ui-page-wide mx-auto px-4 pb-16 pt-6">
@@ -151,10 +175,10 @@ export default function Board({ userId }: { userId: string }) {
               className="ui-select ui-input-fit"
               value={horizonDays}
               onChange={(e) =>
-                void saveSettings({
-                  userId,
-                  horizonDays: Number(e.target.value),
-                })
+                void withToast(
+                  saveSettings({ userId, horizonDays: Number(e.target.value) }),
+                  { error: 'Could not save your horizon' },
+                )
               }
             >
               {HORIZON_OPTIONS.map((o) => (
@@ -170,11 +194,30 @@ export default function Board({ userId }: { userId: string }) {
               type="checkbox"
               checked={showCompleted}
               onChange={(e) =>
-                void saveSettings({ userId, showCompleted: e.target.checked })
+                void withToast(
+                  saveSettings({ userId, showCompleted: e.target.checked }),
+                  { error: 'Could not save that setting' },
+                )
               }
             />
             Show completed
           </label>
+
+          <NotificationsBell
+            cards={cards ?? []}
+            onOpenCard={(cardId) => {
+              const card = cards?.find((c) => c._id === cardId)
+              if (card) setDraft({ card, status: card.status })
+            }}
+          />
+
+          <Link
+            to="/settings"
+            aria-label="Settings"
+            className="rounded-xl p-2 text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
+          >
+            <Settings size={18} />
+          </Link>
 
           <button
             type="button"
@@ -197,6 +240,34 @@ export default function Board({ userId }: { userId: string }) {
       <div className="mb-6">
         <StatsBar stats={stats} horizonDays={horizonDays} />
       </div>
+
+      {boardIsEmpty ? (
+        <div className="mb-6 rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surface)] px-6 py-10 text-center">
+          <h2 className="text-base font-semibold text-[var(--sea-ink)]">
+            Your board is empty
+          </h2>
+          <p className="mx-auto mt-1 max-w-md text-sm text-[var(--sea-ink-soft)]">
+            Tell the assistant something like “rent $1200 due on the 15th” and
+            it will fill the board in for you — or add the first card yourself.
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAssistantOpen(true)}
+              className="ui-button px-4 py-2 text-sm"
+            >
+              <Bot size={16} /> Ask the assistant
+            </button>
+            <button
+              type="button"
+              onClick={() => setDraft({ status: 'upcoming' })}
+              className="ui-button ui-button-secondary px-4 py-2 text-sm"
+            >
+              <Plus size={16} /> Add a card
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {cards === undefined ? (
         <p className="ui-muted text-sm">Loading your board…</p>
@@ -231,11 +302,25 @@ export default function Board({ userId }: { userId: string }) {
                       onOpen={(card) => setDraft({ card, status: card.status })}
                       onDelete={(card) => {
                         if (window.confirm(`Delete "${card.description}"?`)) {
-                          void removeCard({
+                          void withToast(
+                            removeCard({
+                              userId,
+                              id: card._id as Id<'cards'>,
+                            }),
+                            { error: 'Could not delete that card' },
+                          )
+                        }
+                      }}
+                      onRepeat={(card) => {
+                        void withToast(
+                          repeatCard({
                             userId,
                             id: card._id as Id<'cards'>,
-                          })
-                        }
+                          }).then(() =>
+                            pushToast(`Copied "${card.description}" forward`),
+                          ),
+                          { error: 'Could not repeat that card' },
+                        )
                       }}
                     />
                   ))}

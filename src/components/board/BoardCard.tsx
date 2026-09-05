@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Repeat, Trash2 } from 'lucide-react'
+import { CopyPlus, GripVertical, Repeat, Trash2 } from 'lucide-react'
 import { formatCurrency, relativeDue, urgency } from '#/lib/board'
 import type { Card } from '#/lib/board'
 
@@ -15,12 +15,14 @@ export function CardFace({
   dragging = false,
   onOpen,
   onDelete,
+  onRepeat,
   dragHandleProps,
 }: {
   card: Card
   dragging?: boolean
   onOpen?: () => void
   onDelete?: () => void
+  onRepeat?: () => void
   dragHandleProps?: Record<string, unknown>
 }) {
   const state = urgency(card)
@@ -107,16 +109,29 @@ export function CardFace({
           </div>
         </button>
 
-        {onDelete ? (
-          <button
-            type="button"
-            aria-label={`Delete ${card.description}`}
-            onClick={onDelete}
-            className="mt-0.5 text-[var(--sea-ink-soft)] opacity-0 transition hover:text-[#b4462f] group-hover:opacity-100"
-          >
-            <Trash2 size={15} />
-          </button>
-        ) : null}
+        <div className="mt-0.5 flex flex-col gap-1">
+          {onRepeat && card.recurring ? (
+            <button
+              type="button"
+              aria-label={`Repeat ${card.description} next month`}
+              title="Copy to next month"
+              onClick={onRepeat}
+              className="text-[var(--sea-ink-soft)] opacity-0 transition hover:text-[var(--lagoon-deep)] group-hover:opacity-100"
+            >
+              <CopyPlus size={15} />
+            </button>
+          ) : null}
+          {onDelete ? (
+            <button
+              type="button"
+              aria-label={`Delete ${card.description}`}
+              onClick={onDelete}
+              className="text-[var(--sea-ink-soft)] opacity-0 transition hover:text-[#b4462f] group-hover:opacity-100"
+            >
+              <Trash2 size={15} />
+            </button>
+          ) : null}
+        </div>
       </div>
     </article>
   )
@@ -126,10 +141,12 @@ export default function BoardCard({
   card,
   onOpen,
   onDelete,
+  onRepeat,
 }: {
   card: Card
   onOpen: () => void
   onDelete: () => void
+  onRepeat: () => void
 }) {
   const {
     attributes,
@@ -153,6 +170,7 @@ export default function BoardCard({
         card={card}
         onOpen={onOpen}
         onDelete={onDelete}
+        onRepeat={onRepeat}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
