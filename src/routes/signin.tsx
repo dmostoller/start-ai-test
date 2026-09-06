@@ -3,6 +3,11 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 import { authClient } from '#/lib/auth-client'
 import { hasGoogleAuth } from '#/lib/auth'
 import { useUserId } from '#/lib/user'
@@ -56,10 +61,10 @@ function SignIn() {
 
   if (userId) {
     return (
-      <main className="ui-page ui-center">
-        <p className="text-sm text-[var(--sea-ink-soft)]">
+      <main className="mx-auto flex min-h-[calc(100vh-13rem)] w-full max-w-6xl items-center justify-center px-4">
+        <p className="text-sm text-muted-foreground">
           You’re signed in.{' '}
-          <a href="/" className="font-semibold text-[var(--lagoon-deep)]">
+          <a href="/" className="font-semibold text-primary underline-offset-4 hover:underline">
             Go to your board
           </a>
         </p>
@@ -68,109 +73,109 @@ function SignIn() {
   }
 
   return (
-    <main className="ui-page">
-      <div className="ui-card mx-auto max-w-md p-6">
-        <h1 className="ui-title mb-1 text-xl font-semibold">
-          {mode === 'signin' ? 'Sign in' : 'Create an account'}
-        </h1>
-        <p className="ui-muted mb-5 text-sm">
-          Budget Board keeps a separate board for every account.
-        </p>
+    <main className="mx-auto w-full max-w-6xl px-4 py-12">
+      <Card className="mx-auto max-w-md">
+        <CardHeader>
+          <CardTitle className="text-xl">
+            {mode === 'signin' ? 'Sign in' : 'Create an account'}
+          </CardTitle>
+          <CardDescription>Budget Board keeps a separate board for every account.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {google ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() =>
+                  void authClient.signIn.social({
+                    provider: 'google',
+                    callbackURL: '/',
+                  })
+                }
+              >
+                Continue with Google
+              </Button>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <Separator className="flex-1" />
+                or
+                <Separator className="flex-1" />
+              </div>
+            </>
+          ) : null}
 
-        {google ? (
-          <>
-            <button
-              type="button"
-              onClick={() =>
-                void authClient.signIn.social({
-                  provider: 'google',
-                  callbackURL: '/',
-                })
-              }
-              className="ui-button w-full justify-center px-4 py-2.5"
-            >
-              Continue with Google
-            </button>
-            <div className="my-4 flex items-center gap-3 text-xs text-[var(--sea-ink-soft)]">
-              <span className="h-px flex-1 bg-[var(--line)]" />
-              or
-              <span className="h-px flex-1 bg-[var(--line)]" />
-            </div>
-          </>
-        ) : null}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              void form.handleSubmit()
+            }}
+            className="flex flex-col gap-3"
+          >
+            {mode === 'signup' ? (
+              <form.Field name="name">
+                {(field) => (
+                  <Input
+                    placeholder="Name"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                )}
+              </form.Field>
+            ) : null}
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            void form.handleSubmit()
-          }}
-          className="flex flex-col gap-3"
-        >
-          {mode === 'signup' ? (
-            <form.Field name="name">
+            <form.Field name="email">
               {(field) => (
-                <input
-                  className="ui-input"
-                  placeholder="Name"
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="Email"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                 />
               )}
             </form.Field>
-          ) : null}
 
-          <form.Field name="email">
-            {(field) => (
-              <input
-                className="ui-input"
-                type="email"
-                autoComplete="email"
-                placeholder="Email"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            )}
-          </form.Field>
+            <form.Field name="password">
+              {(field) => (
+                <Input
+                  type="password"
+                  autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                  placeholder="Password"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+              )}
+            </form.Field>
 
-          <form.Field name="password">
-            {(field) => (
-              <input
-                className="ui-input"
-                type="password"
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                placeholder="Password"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            )}
-          </form.Field>
+            {error ? (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
 
-          {error ? <p className="ui-alert ui-alert-danger text-sm">{error}</p> : null}
+            <form.Subscribe selector={(s) => s.isSubmitting}>
+              {(isSubmitting) => (
+                <Button type="submit" disabled={isSubmitting} className="w-full">
+                  {isSubmitting ? 'Working…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+                </Button>
+              )}
+            </form.Subscribe>
+          </form>
 
-          <form.Subscribe selector={(s) => s.isSubmitting}>
-            {(isSubmitting) => (
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="ui-button justify-center px-4 py-2.5"
-              >
-                {isSubmitting ? 'Working…' : mode === 'signin' ? 'Sign in' : 'Create account'}
-              </button>
-            )}
-          </form.Subscribe>
-        </form>
-
-        <button
-          type="button"
-          onClick={() => {
-            setError(null)
-            setMode(mode === 'signin' ? 'signup' : 'signin')
-          }}
-          className="mt-4 w-full text-center text-sm text-[var(--lagoon-deep)]"
-        >
-          {mode === 'signin' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
-        </button>
-      </div>
+          <Button
+            type="button"
+            variant="link"
+            className="w-full"
+            onClick={() => {
+              setError(null)
+              setMode(mode === 'signin' ? 'signup' : 'signin')
+            }}
+          >
+            {mode === 'signin' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
+          </Button>
+        </CardContent>
+      </Card>
     </main>
   )
 }

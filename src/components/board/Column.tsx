@@ -2,6 +2,9 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Plus } from 'lucide-react'
 import BoardCard from './BoardCard'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { formatCurrency } from '#/lib/board'
 import type { Card, CardStatus } from '#/lib/board'
 
@@ -32,31 +35,28 @@ export default function Column({
   return (
     <section
       ref={setNodeRef}
-      className={`flex min-h-[12rem] w-full flex-col rounded-2xl border p-3 transition ${
-        isOver
-          ? 'border-[var(--lagoon)] bg-[rgba(79,184,178,0.1)]'
-          : 'border-[var(--line)] bg-[var(--surface)]'
-      }`}
+      className={cn(
+        'flex min-h-[12rem] w-full flex-col rounded-2xl border p-3 transition',
+        isOver ? 'border-primary bg-primary/5' : 'border-border bg-muted/40',
+      )}
     >
       <header className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-baseline gap-2">
-          <h3 className="text-sm font-semibold tracking-tight text-[var(--sea-ink)]">{title}</h3>
-          <span className="rounded-full bg-[var(--chip-bg)] px-2 py-0.5 text-[11px] text-[var(--sea-ink-soft)]">
-            {cards.length}
-          </span>
+          <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
+          <Badge variant="secondary">{cards.length}</Badge>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold tabular-nums text-[var(--sea-ink-soft)]">
+          <span className="text-xs font-semibold tabular-nums text-muted-foreground">
             {formatCurrency(total)}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={onAdd}
             aria-label={`Add card to ${title}`}
-            className="rounded-lg p-1 text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
           >
-            <Plus size={16} />
-          </button>
+            <Plus />
+          </Button>
         </div>
       </header>
 
@@ -72,7 +72,7 @@ export default function Column({
             />
           ))}
           {cards.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-[var(--line)] px-3 py-6 text-center text-xs text-[var(--sea-ink-soft)]">
+            <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
               Drop cards here
             </p>
           ) : null}

@@ -1,4 +1,7 @@
 import { AlertTriangle, Clock, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 import { formatCurrency } from '#/lib/board'
 
 export interface BoardStats {
@@ -11,6 +14,13 @@ export interface BoardStats {
   dueSoonAmount: number
 }
 
+const TONE_CLASS = {
+  neutral: 'text-foreground',
+  good: 'text-emerald-600 dark:text-emerald-400',
+  bad: 'text-destructive',
+  warn: 'text-amber-600 dark:text-amber-400',
+} as const
+
 function Stat({
   icon,
   label,
@@ -22,24 +32,21 @@ function Stat({
   label: string
   value: string
   sub?: string
-  tone?: 'neutral' | 'good' | 'bad' | 'warn'
+  tone?: keyof typeof TONE_CLASS
 }) {
-  const toneClass = {
-    neutral: 'text-[var(--sea-ink)]',
-    good: 'text-[var(--palm)]',
-    bad: 'text-[#b4462f]',
-    warn: 'text-[#8a6320]',
-  }[tone]
+  const toneClass = TONE_CLASS[tone]
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-3">
-      <span className={`shrink-0 ${toneClass}`}>{icon}</span>
-      <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wide text-[var(--sea-ink-soft)]">{label}</p>
-        <p className={`text-base font-bold tabular-nums ${toneClass}`}>{value}</p>
-        {sub ? <p className="text-[11px] text-[var(--sea-ink-soft)]">{sub}</p> : null}
-      </div>
-    </div>
+    <Card>
+      <CardContent className="flex items-center gap-3">
+        <span className={cn('shrink-0', toneClass)}>{icon}</span>
+        <div className="min-w-0">
+          <p className="text-[11px] tracking-wide text-muted-foreground uppercase">{label}</p>
+          <p className={cn('text-base font-bold tabular-nums', toneClass)}>{value}</p>
+          {sub ? <p className="text-[11px] text-muted-foreground">{sub}</p> : null}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -54,10 +61,7 @@ export default function StatsBar({
     return (
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-[70px] animate-pulse rounded-2xl border border-[var(--line)] bg-[var(--surface)]"
-          />
+          <Skeleton key={i} className="h-[70px] rounded-xl" />
         ))}
       </div>
     )

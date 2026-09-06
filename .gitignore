@@ -20,3 +20,4 @@ todos.json
 
 # Vercel build output
 .vercel
+.env*

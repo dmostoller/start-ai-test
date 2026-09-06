@@ -1,43 +1,76 @@
-import { authClient } from '#/lib/auth-client'
 import { Link } from '@tanstack/react-router'
+import { LogOut, Settings } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Skeleton } from '@/components/ui/skeleton'
+import { authClient } from '#/lib/auth-client'
 
 export default function BetterAuthHeader() {
   const { data: session, isPending } = authClient.useSession()
 
   if (isPending) {
-    return <div className="h-8 w-8 bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+    return <Skeleton className="size-8 rounded-full" />
   }
 
   if (session?.user) {
+    const { name, email, image } = session.user
+
     return (
-      <div className="flex items-center gap-2">
-        {session.user.image ? (
-          <img src={session.user.image} alt="" className="h-8 w-8" />
-        ) : (
-          <div className="h-8 w-8 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
-              {session.user.name.charAt(0).toUpperCase() || 'U'}
-            </span>
-          </div>
-        )}
-        <button
-          onClick={() => {
-            void authClient.signOut()
-          }}
-          className="flex-1 h-9 px-4 text-sm font-medium bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              aria-label="Account menu"
+            />
+          }
         >
-          Sign out
-        </button>
-      </div>
+          <Avatar>
+            <AvatarImage src={image ?? undefined} alt="" />
+            <AvatarFallback>{name.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+          </Avatar>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-48">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="flex flex-col gap-0.5 py-1.5">
+              <span className="truncate text-sm font-medium text-foreground">{name}</span>
+              {email ? (
+                <span className="truncate text-xs font-normal text-muted-foreground">{email}</span>
+              ) : null}
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem render={<Link to="/settings" />}>
+            <Settings /> Settings
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => {
+              void authClient.signOut()
+            }}
+          >
+            <LogOut /> Sign out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     )
   }
 
   return (
-    <Link
-      to="/signin"
-      className="h-9 px-4 text-sm font-medium bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors inline-flex items-center"
-    >
+    <Button variant="outline" size="sm" render={<Link to="/signin" />}>
       Sign in
-    </Link>
+    </Button>
   )
 }

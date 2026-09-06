@@ -1,5 +1,6 @@
 import { useStore } from '@tanstack/react-store'
 import { AlertCircle, Check, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { dismissToast, toasts } from '#/lib/toast'
 
 export default function Toaster() {
@@ -13,11 +14,12 @@ export default function Toaster() {
         <div
           key={toast.id}
           role="status"
-          className={`pointer-events-auto flex items-start gap-2 rounded-2xl border px-4 py-3 text-sm shadow-lg backdrop-blur-xl ${
+          className={cn(
+            'pointer-events-auto flex items-start gap-2 rounded-xl border px-4 py-3 text-sm shadow-lg ring-1 ring-foreground/10 backdrop-blur-xl',
             toast.tone === 'error'
-              ? 'border-[rgba(226,114,91,0.5)] bg-[rgba(226,114,91,0.16)] text-[#b4462f]'
-              : 'border-[var(--line)] bg-[var(--surface-strong)] text-[var(--sea-ink)]'
-          }`}
+              ? 'border-destructive/30 bg-destructive/10 text-destructive'
+              : 'border-border bg-popover text-popover-foreground',
+          )}
         >
           {toast.tone === 'error' ? (
             <AlertCircle size={16} className="mt-0.5 shrink-0" />

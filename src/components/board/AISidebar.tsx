@@ -1,6 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
-import { Bot, Send, Sparkles, X } from 'lucide-react'
-import { Streamdown } from 'streamdown'
+import { useState } from 'react'
+import { Bot, Send, Sparkles } from 'lucide-react'
+import { Bubble, BubbleContent } from '@/components/ui/bubble'
+import { Button } from '@/components/ui/button'
+import { Message, MessageContent } from '@/components/ui/message'
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+} from '@/components/ui/message-scroller'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Textarea } from '@/components/ui/textarea'
+import { MarkdownContent } from '#/lib/markdown'
 import { useBoardChat } from '#/lib/ai-chat'
 import type { ChatMessages } from '#/lib/ai-chat'
 
@@ -13,28 +26,22 @@ const SUGGESTIONS = [
 
 function ToolLine({ name, summary }: { name: string; summary?: string }) {
   return (
-    <p className="flex items-center gap-1.5 text-xs text-[var(--sea-ink-soft)]">
-      <Sparkles size={12} className="text-[var(--lagoon)]" />
+    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Sparkles size={12} className="text-primary" />
       <span className="font-medium">{summary ?? name}</span>
     </p>
   )
 }
 
 function Messages({ messages }: { messages: ChatMessages }) {
-  const scroller = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    scroller.current?.scrollTo({ top: scroller.current.scrollHeight })
-  }, [messages])
-
   if (!messages.length) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-        <Bot size={28} className="text-[var(--lagoon)]" />
-        <p className="text-sm font-semibold text-[var(--sea-ink)]">
+        <Bot size={28} className="text-primary" />
+        <p className="text-sm font-semibold text-foreground">
           Describe your money in plain English
         </p>
-        <p className="text-xs text-[var(--sea-ink-soft)]">
+        <p className="text-xs text-muted-foreground">
           I'll create, move and update cards on the board for you.
         </p>
       </div>
@@ -42,33 +49,39 @@ function Messages({ messages }: { messages: ChatMessages }) {
   }
 
   return (
-    <div ref={scroller} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
-      {messages.map(({ id, role, parts }) => (
-        <div
-          key={id}
-          className={`rounded-2xl px-3 py-2 text-sm ${
-            role === 'assistant'
-              ? 'bg-[var(--chip-bg)] text-[var(--sea-ink)]'
-              : 'ml-auto max-w-[85%] bg-[rgba(79,184,178,0.18)] text-[var(--sea-ink)]'
-          }`}
-        >
-          {parts.map((part, index) => {
-            if (part.type === 'text' && part.content) {
-              return (
-                <div key={index} className="prose-sm max-w-none">
-                  <Streamdown>{part.content}</Streamdown>
-                </div>
-              )
-            }
-            if (part.type === 'tool-call') {
-              const output = part.output as { summary?: string } | undefined
-              return <ToolLine key={index} name={part.name} summary={output?.summary} />
-            }
-            return null
-          })}
-        </div>
-      ))}
-    </div>
+    <MessageScrollerProvider autoScroll>
+      <MessageScroller className="flex-1">
+        <MessageScrollerViewport>
+          <MessageScrollerContent className="px-4 py-3">
+            {messages.map(({ id, role, parts }) => (
+              <MessageScrollerItem key={id} messageId={id} scrollAnchor={role === 'user'}>
+                <Message align={role === 'user' ? 'end' : 'start'}>
+                  <MessageContent>
+                    <Bubble variant={role === 'user' ? 'default' : 'muted'}>
+                      <BubbleContent>
+                        {parts.map((part, index) => {
+                          if (part.type === 'text' && part.content) {
+                            return <MarkdownContent key={index}>{part.content}</MarkdownContent>
+                          }
+                          if (part.type === 'tool-call') {
+                            const output = part.output as { summary?: string } | undefined
+                            return (
+                              <ToolLine key={index} name={part.name} summary={output?.summary} />
+                            )
+                          }
+                          return null
+                        })}
+                      </BubbleContent>
+                    </Bubble>
+                  </MessageContent>
+                </Message>
+              </MessageScrollerItem>
+            ))}
+          </MessageScrollerContent>
+        </MessageScrollerViewport>
+        <MessageScrollerButton />
+      </MessageScroller>
+    </MessageScrollerProvider>
   )
 }
 
@@ -86,35 +99,20 @@ export default function AISidebar({ open, onClose }: { open: boolean; onClose: (
     setInput('')
   }
 
-  if (!open) return null
-
   return (
-    <>
-      <div
-        className="fixed inset-0 z-[90] bg-black/30 backdrop-blur-sm lg:hidden"
-        onClick={onClose}
-        role="presentation"
-      />
-      <aside className="fixed inset-y-0 right-0 z-[100] flex w-full max-w-[420px] flex-col border-l border-[var(--line)] bg-[var(--surface-strong)] shadow-2xl backdrop-blur-xl">
-        <header className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--sea-ink)]">
-            <Bot size={18} className="text-[var(--lagoon)]" />
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent className="flex w-full max-w-[420px] gap-0 p-0 sm:max-w-[420px]">
+        <SheetHeader className="flex-row items-center border-b border-border py-3">
+          <SheetTitle className="flex items-center gap-2">
+            <Bot size={18} className="text-primary" />
             Budget assistant
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close assistant"
-            className="rounded-lg p-1 text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]"
-          >
-            <X size={18} />
-          </button>
-        </header>
+          </SheetTitle>
+        </SheetHeader>
 
         <Messages messages={messages} />
 
         {error ? (
-          <p className="mx-4 mb-2 rounded-xl border border-[rgba(226,114,91,0.5)] bg-[rgba(226,114,91,0.14)] px-3 py-2 text-xs text-[#b4462f]">
+          <p className="mx-4 mb-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {error.message || 'The assistant is unavailable. Check GEMINI_API_KEY on the server.'}
           </p>
         ) : null}
@@ -122,14 +120,16 @@ export default function AISidebar({ open, onClose }: { open: boolean; onClose: (
         {messages.length === 0 ? (
           <div className="flex flex-wrap gap-2 px-4 pb-2">
             {SUGGESTIONS.map((s) => (
-              <button
+              <Button
                 key={s}
                 type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-full"
                 onClick={() => submit(s)}
-                className="rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-3 py-1 text-xs text-[var(--sea-ink-soft)] transition hover:text-[var(--sea-ink)]"
               >
                 {s}
-              </button>
+              </Button>
             ))}
           </div>
         ) : null}
@@ -139,16 +139,16 @@ export default function AISidebar({ open, onClose }: { open: boolean; onClose: (
             e.preventDefault()
             submit(input)
           }}
-          className="border-t border-[var(--line)] p-3"
+          className="border-t border-border p-3"
         >
           <div className="relative">
-            <textarea
+            <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={busy ? 'Thinking…' : 'Add an expense, ask a question…'}
               rows={1}
-              className="ui-textarea pr-10 text-sm"
-              style={{ minHeight: '40px', maxHeight: '140px' }}
+              className="min-h-10 pr-10 text-sm"
+              style={{ maxHeight: '140px' }}
               onInput={(e) => {
                 const el = e.target as HTMLTextAreaElement
                 el.style.height = 'auto'
@@ -161,17 +161,19 @@ export default function AISidebar({ open, onClose }: { open: boolean; onClose: (
                 }
               }}
             />
-            <button
+            <Button
               type="submit"
+              variant="ghost"
+              size="icon-sm"
               disabled={!input.trim() || busy}
               aria-label="Send"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-[var(--lagoon-deep)] transition disabled:text-[var(--sea-ink-soft)]"
+              className="absolute top-1/2 right-2 -translate-y-1/2"
             >
               <Send size={16} />
-            </button>
+            </Button>
           </div>
         </form>
-      </aside>
-    </>
+      </SheetContent>
+    </Sheet>
   )
 }

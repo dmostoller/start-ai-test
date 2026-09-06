@@ -4,6 +4,19 @@ import { useForm } from '@tanstack/react-form'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { z } from 'zod'
 import { api } from '../../convex/_generated/api'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { HORIZON_OPTIONS } from '#/lib/board'
 import { fieldErrorMessage } from '#/lib/form'
 import { pushToast, withToast } from '#/lib/toast'
@@ -15,7 +28,7 @@ export const Route = createFileRoute('/settings')({ component: Settings })
 function FieldError({ errors }: { errors: Array<unknown> }) {
   const message = fieldErrorMessage(errors)
   if (!message) return null
-  return <span className="text-xs text-[#b4462f]">{message}</span>
+  return <span className="text-xs text-destructive">{message}</span>
 }
 
 const categorySchema = z.object({
@@ -28,17 +41,20 @@ function Settings() {
 
   if (isPending) {
     return (
-      <main className="ui-page">
-        <p className="ui-muted text-sm">Loading…</p>
+      <main className="mx-auto w-full max-w-6xl px-4 py-12">
+        <p className="text-sm text-muted-foreground">Loading…</p>
       </main>
     )
   }
 
   if (!userId) {
     return (
-      <main className="ui-page">
-        <p className="text-sm text-[var(--sea-ink-soft)]">
-          <Link to="/signin" className="font-semibold text-[var(--lagoon-deep)]">
+      <main className="mx-auto w-full max-w-6xl px-4 py-12">
+        <p className="text-sm text-muted-foreground">
+          <Link
+            to="/signin"
+            className="font-semibold text-primary underline-offset-4 hover:underline"
+          >
             Sign in
           </Link>{' '}
           to change your settings.
@@ -72,160 +88,173 @@ function SettingsForm({ userId, email }: { userId: string; email?: string | null
   })
 
   return (
-    <main className="ui-page">
-      <Link
-        to="/"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-[var(--sea-ink-soft)] no-underline hover:text-[var(--sea-ink)]"
-      >
+    <main className="mx-auto w-full max-w-6xl px-4 py-12">
+      <Button variant="link" className="mb-4 px-0" render={<Link to="/" />}>
         <ArrowLeft size={15} /> Back to the board
-      </Link>
+      </Button>
 
-      <h1 className="display-title mb-6 text-2xl font-bold text-[var(--sea-ink)]">Settings</h1>
+      <h1 className="mb-6 text-2xl font-bold text-foreground">Settings</h1>
 
-      <section className="ui-card mb-4 p-5">
-        <h2 className="ui-section-title mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">
-          Board
-        </h2>
-
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-[var(--sea-ink)]">Time horizon</span>
-            <span className="text-xs text-[var(--sea-ink-soft)]">
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+            Board
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Label className="flex flex-col items-start gap-1">
+            <span className="font-medium text-foreground">Time horizon</span>
+            <span className="text-xs font-normal text-muted-foreground">
               How far ahead the board and the totals look.
             </span>
-            <select
-              className="ui-select ui-input-fit mt-1"
-              value={settings?.horizonDays ?? 30}
-              onChange={(e) =>
-                void withToast(saveSettings({ userId, horizonDays: Number(e.target.value) }), {
+            <Select
+              value={String(settings?.horizonDays ?? 30)}
+              onValueChange={(value) =>
+                void withToast(saveSettings({ userId, horizonDays: Number(value) }), {
                   error: 'Could not save your horizon',
                 })
               }
             >
-              {HORIZON_OPTIONS.map((o) => (
-                <option key={o.days} value={o.days}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {HORIZON_OPTIONS.map((o) => (
+                  <SelectItem key={o.days} value={String(o.days)}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Label>
 
-          <label className="flex items-center gap-2 text-sm text-[var(--sea-ink)]">
-            <input
-              type="checkbox"
+          <Label>
+            <Switch
               checked={settings?.showCompleted ?? true}
-              onChange={(e) =>
-                void withToast(saveSettings({ userId, showCompleted: e.target.checked }), {
+              onCheckedChange={(checked) =>
+                void withToast(saveSettings({ userId, showCompleted: checked }), {
                   error: 'Could not save that setting',
                 })
               }
             />
             Show paid and received cards
-          </label>
-        </div>
-      </section>
+          </Label>
+        </CardContent>
+      </Card>
 
-      <section className="ui-card mb-4 p-5">
-        <h2 className="ui-section-title mb-1 text-sm font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">
-          Categories
-        </h2>
-        <p className="ui-muted mb-4 text-xs">
-          The built-in categories are always available. Anything you add here shows up in the card
-          editor and in the assistant’s suggestions.
-        </p>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+            Categories
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            The built-in categories are always available. Anything you add here shows up in the card
+            editor and in the assistant’s suggestions.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              void form.handleSubmit()
+            }}
+            className="mb-5 flex flex-wrap items-start gap-2"
+          >
+            <form.Field name="name">
+              {(field) => (
+                <div className="flex min-w-[12rem] flex-1 flex-col gap-1">
+                  <Input
+                    placeholder="New category"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                  <FieldError errors={field.state.meta.errors} />
+                </div>
+              )}
+            </form.Field>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            void form.handleSubmit()
-          }}
-          className="mb-5 flex flex-wrap items-start gap-2"
-        >
-          <form.Field name="name">
-            {(field) => (
-              <div className="flex min-w-[12rem] flex-1 flex-col gap-1">
-                <input
-                  className="ui-input"
-                  placeholder="New category"
+            <form.Field name="type">
+              {(field) => (
+                <Select
                   value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                <FieldError errors={field.state.meta.errors} />
-              </div>
-            )}
-          </form.Field>
+                  onValueChange={(value) => field.handleChange(value as CardType)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="expense">Expense</SelectItem>
+                    <SelectItem value="income">Income</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </form.Field>
 
-          <form.Field name="type">
-            {(field) => (
-              <select
-                className="ui-select ui-input-fit"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value as CardType)}
-              >
-                <option value="expense">Expense</option>
-                <option value="income">Income</option>
-              </select>
-            )}
-          </form.Field>
+            <Button type="submit">Add</Button>
+          </form>
 
-          <button type="submit" className="ui-button px-4 py-2 text-sm">
-            Add
-          </button>
-        </form>
+          {categories === undefined ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {(['expense', 'income'] as Array<CardType>).map((type) => (
+                <div key={type}>
+                  <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    {type}
+                  </h3>
+                  <ul className="flex flex-wrap gap-1.5">
+                    {categories[type].map((name) => {
+                      const custom = categories.custom.find(
+                        (c) => c.type === type && c.name === name,
+                      )
+                      return (
+                        <li key={name}>
+                          <Badge variant="secondary" className="gap-1.5">
+                            {name}
+                            {custom ? (
+                              <button
+                                type="button"
+                                aria-label={`Remove ${name}`}
+                                onClick={() =>
+                                  void withToast(
+                                    removeCategory({
+                                      userId,
+                                      id: custom._id,
+                                    }),
+                                    { error: 'Could not remove that category' },
+                                  )
+                                }
+                                className="text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            ) : null}
+                          </Badge>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        {categories === undefined ? (
-          <p className="ui-muted text-sm">Loading…</p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {(['expense', 'income'] as Array<CardType>).map((type) => (
-              <div key={type}>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">
-                  {type}
-                </h3>
-                <ul className="flex flex-wrap gap-1.5">
-                  {categories[type].map((name) => {
-                    const custom = categories.custom.find((c) => c.type === type && c.name === name)
-                    return (
-                      <li key={name} className="ui-pill inline-flex items-center gap-1.5">
-                        {name}
-                        {custom ? (
-                          <button
-                            type="button"
-                            aria-label={`Remove ${name}`}
-                            onClick={() =>
-                              void withToast(
-                                removeCategory({
-                                  userId,
-                                  id: custom._id,
-                                }),
-                                { error: 'Could not remove that category' },
-                              )
-                            }
-                            className="text-[var(--sea-ink-soft)] hover:text-[#b4462f]"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        ) : null}
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="ui-card p-5">
-        <h2 className="ui-section-title mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">
-          Account
-        </h2>
-        <p className="text-sm text-[var(--sea-ink)]">{email ?? 'Signed in'}</p>
-        <p className="ui-muted mt-1 text-xs">
-          Cards, categories and settings are stored per account. Removing a custom category leaves
-          existing cards untouched.
-        </p>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+            Account
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-foreground">{email ?? 'Signed in'}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Cards, categories and settings are stored per account. Removing a custom category leaves
+            existing cards untouched.
+          </p>
+        </CardContent>
+      </Card>
     </main>
   )
 }

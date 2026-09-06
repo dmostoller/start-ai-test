@@ -1,6 +1,23 @@
 import { useForm } from '@tanstack/react-form'
-import { X } from 'lucide-react'
 import { z } from 'zod'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { LANES, fromDateInput, toDateInput, typeForStatus } from '#/lib/board'
 import { fieldErrorMessage } from '#/lib/form'
 import type { Card, CardPriority, CardStatus, CardType } from '#/lib/board'
@@ -60,29 +77,11 @@ export default function CardDialog({
   })
 
   return (
-    <div
-      className="fixed inset-0 z-[120] flex items-end justify-center bg-black/40 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={card ? 'Edit card' : 'New card'}
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-5 shadow-2xl backdrop-blur-xl sm:max-w-lg sm:rounded-3xl"
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="ui-title text-lg font-semibold">{card ? 'Edit card' : 'New card'}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded-lg p-1 text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]"
-          >
-            <X size={18} />
-          </button>
-        </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{card ? 'Edit card' : 'New card'}</DialogTitle>
+        </DialogHeader>
 
         <form
           onSubmit={(e) => {
@@ -96,9 +95,11 @@ export default function CardDialog({
             {(field) => (
               <div className="grid grid-cols-2 gap-2">
                 {(['expense', 'income'] as Array<CardType>).map((type) => (
-                  <button
+                  <Button
                     key={type}
                     type="button"
+                    variant={field.state.value === type ? 'default' : 'outline'}
+                    className="capitalize"
                     onClick={() => {
                       field.handleChange(type)
                       const lane = LANES.find((l) => l.type === type)!
@@ -107,14 +108,9 @@ export default function CardDialog({
                         form.setFieldValue('category', categories[type][0])
                       }
                     }}
-                    className={`rounded-xl border px-3 py-2 text-sm font-semibold capitalize transition ${
-                      field.state.value === type
-                        ? 'border-[var(--lagoon)] bg-[rgba(79,184,178,0.16)] text-[var(--lagoon-deep)]'
-                        : 'border-[var(--line)] bg-[var(--chip-bg)] text-[var(--sea-ink-soft)]'
-                    }`}
                   >
                     {type}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -122,27 +118,25 @@ export default function CardDialog({
 
           <form.Field name="description">
             {(field) => (
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--sea-ink)]">Description</span>
-                <input
-                  className="ui-input"
+              <Label className="flex flex-col items-start gap-1">
+                Description
+                <Input
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
                   placeholder="Rent, Netflix, Paycheck…"
                 />
                 <FieldMessage errors={field.state.meta.errors} />
-              </label>
+              </Label>
             )}
           </form.Field>
 
           <div className="grid grid-cols-2 gap-3">
             <form.Field name="amount">
               {(field) => (
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--sea-ink)]">Amount</span>
-                  <input
-                    className="ui-input"
+                <Label className="flex flex-col items-start gap-1">
+                  Amount
+                  <Input
                     type="number"
                     min="0"
                     step="0.01"
@@ -151,23 +145,22 @@ export default function CardDialog({
                     onBlur={field.handleBlur}
                   />
                   <FieldMessage errors={field.state.meta.errors} />
-                </label>
+                </Label>
               )}
             </form.Field>
 
             <form.Field name="date">
               {(field) => (
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--sea-ink)]">Date</span>
-                  <input
-                    className="ui-input"
+                <Label className="flex flex-col items-start gap-1">
+                  Date
+                  <Input
                     type="date"
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
                   />
                   <FieldMessage errors={field.state.meta.errors} />
-                </label>
+                </Label>
               )}
             </form.Field>
           </div>
@@ -177,13 +170,13 @@ export default function CardDialog({
               <div className="grid grid-cols-2 gap-3">
                 <form.Field name="category">
                   {(field) => (
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-[var(--sea-ink)]">Category</span>
-                      <select
-                        className="ui-select"
+                    <Label className="flex flex-col items-start gap-1">
+                      Category
+                      <Select
                         value={field.state.value}
-                        onChange={async (e) => {
-                          if (e.target.value === '__new__') {
+                        onValueChange={async (value) => {
+                          if (value === null) return
+                          if (value === '__new__') {
                             const name = window.prompt('New category name')
                             if (name?.trim()) {
                               await onAddCategory(name.trim(), type)
@@ -191,37 +184,46 @@ export default function CardDialog({
                             }
                             return
                           }
-                          field.handleChange(e.target.value)
+                          field.handleChange(value)
                         }}
                       >
-                        {categories[type].map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                        <option value="__new__">+ New category…</option>
-                      </select>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories[type].map((name) => (
+                            <SelectItem key={name} value={name}>
+                              {name}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="__new__">+ New category…</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FieldMessage errors={field.state.meta.errors} />
-                    </label>
+                    </Label>
                   )}
                 </form.Field>
 
                 <form.Field name="status">
                   {(field) => (
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-[var(--sea-ink)]">Column</span>
-                      <select
-                        className="ui-select"
+                    <Label className="flex flex-col items-start gap-1">
+                      Column
+                      <Select
                         value={field.state.value}
-                        onChange={(e) => field.handleChange(e.target.value as CardStatus)}
+                        onValueChange={(value) => value && field.handleChange(value as CardStatus)}
                       >
-                        {LANES.find((l) => l.type === type)!.columns.map((c) => (
-                          <option key={c.status} value={c.status}>
-                            {c.title}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LANES.find((l) => l.type === type)!.columns.map((c) => (
+                            <SelectItem key={c.status} value={c.status}>
+                              {c.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Label>
                   )}
                 </form.Field>
               </div>
@@ -231,81 +233,73 @@ export default function CardDialog({
           <div className="grid grid-cols-2 gap-3">
             <form.Field name="source">
               {(field) => (
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--sea-ink)]">
-                    Source <span className="text-[var(--sea-ink-soft)]">(optional)</span>
-                  </span>
-                  <input
-                    className="ui-input"
+                <Label className="flex flex-col items-start gap-1">
+                  Source <span className="font-normal text-muted-foreground">(optional)</span>
+                  <Input
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="Payee or payer"
                   />
-                </label>
+                </Label>
               )}
             </form.Field>
 
             <form.Field name="priority">
               {(field) => (
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--sea-ink)]">Priority</span>
-                  <select
-                    className="ui-select"
+                <Label className="flex flex-col items-start gap-1">
+                  Priority
+                  <Select
                     value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value as CardPriority)}
+                    onValueChange={(value) => value && field.handleChange(value as CardPriority)}
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </label>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Label>
               )}
             </form.Field>
           </div>
 
           <form.Field name="recurring">
             {(field) => (
-              <label className="flex items-center gap-2 text-sm text-[var(--sea-ink)]">
-                <input
-                  type="checkbox"
+              <Label>
+                <Checkbox
                   checked={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.checked)}
+                  onCheckedChange={(checked) => field.handleChange(checked === true)}
                 />
                 Recurring
-              </label>
+              </Label>
             )}
           </form.Field>
 
           <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>
             {([canSubmit, isSubmitting]) => (
-              <div className="mt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="ui-button ui-button-secondary px-4 py-2"
-                >
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={onClose}>
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={!canSubmit || isSubmitting}
-                  className="ui-button px-4 py-2"
-                >
+                </Button>
+                <Button type="submit" disabled={!canSubmit || isSubmitting}>
                   {isSubmitting ? 'Saving…' : card ? 'Save changes' : 'Add card'}
-                </button>
-              </div>
+                </Button>
+              </DialogFooter>
             )}
           </form.Subscribe>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
 function FieldMessage({ errors }: { errors: Array<unknown> }) {
   const message = fieldErrorMessage(errors)
   if (!message) return null
-  return <span className="text-xs text-[#b4462f]">{message}</span>
+  return <span className="text-xs text-destructive">{message}</span>
 }
 
 export function toCardMutationArgs(values: CardFormValues) {

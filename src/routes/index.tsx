@@ -10,8 +10,8 @@ function Home() {
 
   if (isPending) {
     return (
-      <main className="ui-page">
-        <p className="ui-muted text-sm">Loading…</p>
+      <main className="mx-auto w-full max-w-6xl px-4 py-12">
+        <p className="text-sm text-muted-foreground">Loading…</p>
       </main>
     )
   }

@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, Bell, CalendarClock, Check, Clock } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { buildAlerts, pruneDismissed, readDismissed, writeDismissed } from '#/lib/notifications'
 import type { Alert, AlertKind } from '#/lib/notifications'
 import type { Card } from '#/lib/board'
 
 const ICON: Record<AlertKind, React.ReactNode> = {
-  overdue: <AlertTriangle size={15} className="text-[#b4462f]" />,
-  'due-today': <Clock size={15} className="text-[#8a6320]" />,
-  'due-soon': <CalendarClock size={15} className="text-[var(--lagoon-deep)]" />,
-  'income-late': <Clock size={15} className="text-[var(--sea-ink-soft)]" />,
+  overdue: <AlertTriangle size={15} className="text-destructive" />,
+  'due-today': <Clock size={15} className="text-amber-600 dark:text-amber-400" />,
+  'due-soon': <CalendarClock size={15} className="text-primary" />,
+  'income-late': <Clock size={15} className="text-muted-foreground" />,
 }
 
 export default function NotificationsBell({
@@ -42,84 +45,75 @@ export default function NotificationsBell({
   }
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={`Notifications (${visible.length})`}
-        aria-expanded={open}
-        className="relative rounded-xl p-2 text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
-      >
-        <Bell size={18} />
-        {visible.length > 0 ? (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e2725b] px-1 text-[10px] font-bold text-white">
-            {visible.length > 9 ? '9+' : visible.length}
-          </span>
-        ) : null}
-      </button>
-
-      {open ? (
-        <>
-          <div
-            className="fixed inset-0 z-[95]"
-            onClick={() => setOpen(false)}
-            role="presentation"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            aria-label={`Notifications (${visible.length})`}
           />
-          <div className="absolute right-0 z-[96] mt-2 w-[min(92vw,22rem)] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-xl backdrop-blur-xl">
-            <header className="flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5">
-              <h2 className="text-sm font-semibold text-[var(--sea-ink)]">Reminders</h2>
-              {visible.length > 0 ? (
+        }
+      >
+        <Bell />
+        {visible.length > 0 ? (
+          <Badge
+            variant="destructive"
+            className="absolute -top-1 -right-1 h-4 min-w-4 justify-center rounded-full bg-destructive px-1 text-[10px] text-white"
+          >
+            {visible.length > 9 ? '9+' : visible.length}
+          </Badge>
+        ) : null}
+      </PopoverTrigger>
+
+      <PopoverContent align="end" className="w-[min(92vw,22rem)] p-0">
+        <header className="flex items-center justify-between border-b border-border px-4 py-2.5">
+          <h2 className="text-sm font-semibold text-foreground">Reminders</h2>
+          {visible.length > 0 ? (
+            <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={dismissAll}>
+              Clear all
+            </Button>
+          ) : null}
+        </header>
+
+        {visible.length === 0 ? (
+          <p className="flex items-center gap-2 px-4 py-6 text-sm text-muted-foreground">
+            <Check size={16} className="text-emerald-600 dark:text-emerald-400" />
+            Nothing needs your attention.
+          </p>
+        ) : (
+          <ul className="max-h-[60vh] overflow-y-auto">
+            {visible.map((alert) => (
+              <li
+                key={alert.id}
+                className="flex items-start gap-2 border-b border-border px-4 py-3 last:border-0"
+              >
+                <span className="mt-0.5">{ICON[alert.kind]}</span>
                 <button
                   type="button"
-                  onClick={dismissAll}
-                  className="text-xs text-[var(--lagoon-deep)]"
+                  onClick={() => {
+                    onOpenCard(alert.cardId)
+                    setOpen(false)
+                  }}
+                  className="min-w-0 flex-1 text-left"
                 >
-                  Clear all
+                  <p className="truncate text-sm font-medium text-foreground">{alert.title}</p>
+                  <p className="text-xs text-muted-foreground">{alert.detail}</p>
                 </button>
-              ) : null}
-            </header>
-
-            {visible.length === 0 ? (
-              <p className="flex items-center gap-2 px-4 py-6 text-sm text-[var(--sea-ink-soft)]">
-                <Check size={16} className="text-[var(--palm)]" />
-                Nothing needs your attention.
-              </p>
-            ) : (
-              <ul className="max-h-[60vh] overflow-y-auto">
-                {visible.map((alert) => (
-                  <li
-                    key={alert.id}
-                    className="flex items-start gap-2 border-b border-[var(--line)] px-4 py-3 last:border-0"
-                  >
-                    <span className="mt-0.5">{ICON[alert.kind]}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onOpenCard(alert.cardId)
-                        setOpen(false)
-                      }}
-                      className="min-w-0 flex-1 text-left"
-                    >
-                      <p className="truncate text-sm font-medium text-[var(--sea-ink)]">
-                        {alert.title}
-                      </p>
-                      <p className="text-xs text-[var(--sea-ink-soft)]">{alert.detail}</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => dismiss(alert)}
-                      aria-label={`Dismiss ${alert.title}`}
-                      className="mt-0.5 text-xs text-[var(--sea-ink-soft)] hover:text-[var(--sea-ink)]"
-                    >
-                      <Check size={14} />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </>
-      ) : null}
-    </div>
+                <button
+                  type="button"
+                  onClick={() => dismiss(alert)}
+                  aria-label={`Dismiss ${alert.title}`}
+                  className="mt-0.5 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <Check size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }
