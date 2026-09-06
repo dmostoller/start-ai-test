@@ -48,6 +48,8 @@ const config = defineConfig({
     ignorePatterns: [
       'convex/_generated/**',
       'src/routeTree.gen.ts',
+      '.agents/**',
+      '.claude/**',
       '.nitro/**',
       '.output/**',
       '.vercel/**',
@@ -57,9 +59,17 @@ const config = defineConfig({
 
   // Oxfmt
   fmt: {
-    // routeTree.gen.ts is rewritten by `tsr generate`; formatting it only
-    // creates churn on the next regeneration.
-    ignorePatterns: ['src/routeTree.gen.ts', 'convex/_generated/**'],
+    ignorePatterns: [
+      // Rewritten by `tsr generate`; formatting it only creates churn on the
+      // next regeneration.
+      'src/routeTree.gen.ts',
+      'convex/_generated/**',
+      // Agent skills and guidelines installed by `convex dev` — vendor files,
+      // not ours to restyle.
+      '.agents/**',
+      '.claude/**',
+      'AGENTS.md',
+    ],
     semi: false,
     singleQuote: true,
   },
