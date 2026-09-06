@@ -147,6 +147,22 @@ describe('cards.update', () => {
       /not found/i,
     )
   })
+
+  test('drops the recurrence rule when recurring is turned off', async () => {
+    const t = setup()
+    const id = await t.mutation(
+      api.cards.create,
+      expenseArgs({
+        recurring: true,
+        recurrence: { frequency: 'weekly', interval: 2, weekday: 3 },
+      }),
+    )
+    await t.mutation(api.cards.update, { userId: USER, id, recurring: false })
+
+    const card = await t.query(api.cards.get, { userId: USER, id })
+    expect(card).toMatchObject({ recurring: false })
+    expect(card?.recurrence).toBeUndefined()
+  })
 })
 
 describe('cards.move', () => {
@@ -239,6 +255,23 @@ describe('cards.remove and repeat', () => {
     })
     expect(copy!.date).toBe(original!.date + 30 * DAY)
     expect(copy!.completedAt).toBeUndefined()
+  })
+
+  test('repeat carries the recurrence rule forward and honors an explicit date', async () => {
+    const t = setup()
+    const recurrence = { frequency: 'monthly' as const, interval: 1, dayOfMonth: 1 }
+    const id = await t.mutation(
+      api.cards.create,
+      expenseArgs({ status: 'paid', recurring: true, recurrence }),
+    )
+    const original = await t.query(api.cards.get, { userId: USER, id })
+
+    const nextDate = original!.date + 45 * DAY
+    const copyId = await t.mutation(api.cards.repeat, { userId: USER, id, date: nextDate })
+    const copy = await t.query(api.cards.get, { userId: USER, id: copyId })
+
+    expect(copy?.date).toBe(nextDate)
+    expect(copy?.recurrence).toEqual(recurrence)
   })
 })
 

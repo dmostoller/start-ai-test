@@ -1,6 +1,6 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
-import { cardPriority, cardStatus, cardType } from './schema'
+import { cardPriority, cardStatus, cardType, recurrence } from './schema'
 import { isCompletedStatus, statusesForType } from './lib'
 import type { MutationCtx } from './_generated/server'
 import type { Id } from './_generated/dataModel'
@@ -53,6 +53,7 @@ export const create = mutation({
     category: v.string(),
     priority: v.optional(cardPriority),
     recurring: v.optional(v.boolean()),
+    recurrence: v.optional(recurrence),
     source: v.optional(v.string()),
     status: v.optional(cardStatus),
   },
@@ -74,6 +75,7 @@ export const create = mutation({
       category: args.category,
       priority: args.priority ?? 'medium',
       recurring: args.recurring ?? false,
+      recurrence: args.recurring ? args.recurrence : undefined,
       source: args.source,
       status,
       order: await nextOrder(ctx, args.userId, status),
@@ -94,6 +96,7 @@ export const update = mutation({
     category: v.optional(v.string()),
     priority: v.optional(cardPriority),
     recurring: v.optional(v.boolean()),
+    recurrence: v.optional(recurrence),
     source: v.optional(v.string()),
     status: v.optional(cardStatus),
   },
@@ -104,6 +107,11 @@ export const update = mutation({
 
     for (const [key, value] of Object.entries(fields) as Array<[string, unknown]>) {
       if (value !== undefined) patch[key] = value
+    }
+
+    // Turning recurring off drops the now-irrelevant recurrence rule.
+    if (fields.recurring === false) {
+      patch.recurrence = undefined
     }
 
     // Changing type moves the card to the default column of the other lane
@@ -172,8 +180,10 @@ export const repeat = mutation({
     userId: v.string(),
     id: v.id('cards'),
     days: v.optional(v.number()),
+    // explicit next date, e.g. computed client-side from the card's recurrence rule
+    date: v.optional(v.number()),
   },
-  handler: async (ctx, { userId, id, days }) => {
+  handler: async (ctx, { userId, id, days, date }) => {
     const card = await ownedCard(ctx, userId, id)
     const status = card.type === 'expense' ? 'upcoming' : 'expected'
     return await ctx.db.insert('cards', {
@@ -181,10 +191,11 @@ export const repeat = mutation({
       type: card.type,
       amount: card.amount,
       description: card.description,
-      date: card.date + (days ?? 30) * DAY,
+      date: date ?? card.date + (days ?? 30) * DAY,
       category: card.category,
       priority: card.priority,
       recurring: true,
+      recurrence: card.recurrence,
       source: card.source,
       status,
       order: await nextOrder(ctx, userId, status),

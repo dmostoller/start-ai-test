@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { CopyPlus, GripVertical, Repeat, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { formatCurrency, relativeDue, urgency } from '#/lib/board'
+import { describeRecurrence, formatCurrency, relativeDue, urgency } from '#/lib/board'
 import type { Card } from '#/lib/board'
 
 const PRIORITY_DOT: Record<Card['priority'], string> = {
@@ -93,7 +93,8 @@ export function CardFace({
 
             {card.recurring ? (
               <Badge variant="outline">
-                <Repeat size={11} /> recurring
+                <Repeat size={11} />
+                {card.recurrence ? describeRecurrence(card.recurrence) : 'recurring'}
               </Badge>
             ) : null}
 
@@ -108,8 +109,12 @@ export function CardFace({
           {onRepeat && card.recurring ? (
             <button
               type="button"
-              aria-label={`Repeat ${card.description} next month`}
-              title="Copy to next month"
+              aria-label={`Repeat ${card.description}`}
+              title={
+                card.recurrence
+                  ? `Copy forward · ${describeRecurrence(card.recurrence)}`
+                  : 'Copy to next month'
+              }
               onClick={onRepeat}
               className="text-muted-foreground opacity-0 transition hover:text-primary group-hover:opacity-100"
             >

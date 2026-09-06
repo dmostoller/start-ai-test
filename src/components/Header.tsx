@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import { Wallet } from 'lucide-react'
 import BetterAuthHeader from '../integrations/better-auth/header-user'
 import ThemeToggle from './ThemeToggle'
+import { FolderKanban } from 'lucide-react'
 
 export default function Header() {
   return (
@@ -11,10 +11,8 @@ export default function Header() {
           to="/"
           className="group flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-transform group-hover:scale-105">
-            <Wallet size={16} strokeWidth={2.25} />
-          </span>
-          <span className="text-base font-semibold tracking-tight text-foreground">
+          <FolderKanban className="h-6 w-6 text-muted-foreground transition-colors group-hover:text-foreground" />
+          <span className="text-lg font-semibold tracking-tight text-foreground">
             Budget Board
           </span>
         </Link>

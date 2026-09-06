@@ -24,6 +24,16 @@ import CardDialog, { toCardMutationArgs } from './CardDialog'
 import { CardFace } from './BoardCard'
 import { Button } from '@/components/ui/button'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -33,7 +43,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Toggle } from '@/components/ui/toggle'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { DAY, HORIZON_OPTIONS, LANES, isCompleted } from '#/lib/board'
+import { DAY, HORIZON_OPTIONS, LANES, isCompleted, nextOccurrence } from '#/lib/board'
 import { pushToast, withToast } from '#/lib/toast'
 import type { Card, CardStatus, CardType } from '#/lib/board'
 import type { CardDraft, CardFormValues } from './CardDialog'
@@ -59,6 +69,7 @@ export default function Board({ userId }: { userId: string }) {
   const [draft, setDraft] = useState<CardDraft | null>(null)
   const [activeCard, setActiveCard] = useState<Card | null>(null)
   const [assistantOpen, setAssistantOpen] = useState(false)
+  const [cardToDelete, setCardToDelete] = useState<Card | null>(null)
 
   const horizonDays = settings?.horizonDays ?? 30
   const showCompleted = settings?.showCompleted ?? true
@@ -290,22 +301,15 @@ export default function Board({ userId }: { userId: string }) {
                       cards={byStatus.get(column.status) ?? []}
                       onAdd={() => setDraft({ status: column.status })}
                       onOpen={(card) => setDraft({ card, status: card.status })}
-                      onDelete={(card) => {
-                        if (window.confirm(`Delete "${card.description}"?`)) {
-                          void withToast(
-                            removeCard({
-                              userId,
-                              id: card._id as Id<'cards'>,
-                            }),
-                            { error: 'Could not delete that card' },
-                          )
-                        }
-                      }}
+                      onDelete={(card) => setCardToDelete(card)}
                       onRepeat={(card) => {
                         void withToast(
                           repeatCard({
                             userId,
                             id: card._id as Id<'cards'>,
+                            date: card.recurrence
+                              ? nextOccurrence(card.date, card.recurrence)
+                              : undefined,
                           }).then(() => pushToast(`Copied "${card.description}" forward`)),
                           { error: 'Could not repeat that card' },
                         )
@@ -332,6 +336,41 @@ export default function Board({ userId }: { userId: string }) {
       ) : null}
 
       <AISidebar open={assistantOpen} onClose={() => setAssistantOpen(false)} />
+
+      <AlertDialog
+        open={cardToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setCardToDelete(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete card</AlertDialogTitle>
+            <AlertDialogDescription>
+              Delete "{cardToDelete?.description}"? This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (!cardToDelete) return
+                void withToast(
+                  removeCard({
+                    userId,
+                    id: cardToDelete._id as Id<'cards'>,
+                  }),
+                  { error: 'Could not delete that card' },
+                )
+                setCardToDelete(null)
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

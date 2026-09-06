@@ -18,9 +18,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { LANES, fromDateInput, toDateInput, typeForStatus } from '#/lib/board'
+import {
+  LANES,
+  WEEKDAYS,
+  describeRecurrence,
+  fromDateInput,
+  toDateInput,
+  typeForStatus,
+} from '#/lib/board'
 import { fieldErrorMessage } from '#/lib/form'
-import type { Card, CardPriority, CardStatus, CardType } from '#/lib/board'
+import type { Card, CardPriority, CardStatus, CardType, Recurrence } from '#/lib/board'
+
+const recurrenceSchema = z.object({
+  frequency: z.enum(['weekly', 'monthly']),
+  interval: z.number().int().min(1),
+  weekday: z.number().int().min(0).max(6).optional(),
+  dayOfMonth: z.number().int().min(1).max(31).optional(),
+})
 
 const schema = z.object({
   type: z.enum(['income', 'expense']),
@@ -30,6 +44,7 @@ const schema = z.object({
   category: z.string().min(1, 'Pick a category'),
   priority: z.enum(['low', 'medium', 'high']),
   recurring: z.boolean(),
+  recurrence: recurrenceSchema.nullable(),
   source: z.string(),
   status: z.enum(['upcoming', 'due', 'paid', 'expected', 'received']),
 })
@@ -66,6 +81,7 @@ export default function CardDialog({
       category: card?.category ?? categories[initialType][0],
       priority: card?.priority ?? 'medium',
       recurring: card?.recurring ?? false,
+      recurrence: card?.recurrence ?? null,
       source: card?.source ?? '',
       status: card?.status ?? draft.status,
     } satisfies CardFormValues,
@@ -268,13 +284,150 @@ export default function CardDialog({
 
           <form.Field name="recurring">
             {(field) => (
-              <Label>
-                <Checkbox
-                  checked={field.state.value}
-                  onCheckedChange={(checked) => field.handleChange(checked === true)}
-                />
-                Recurring
-              </Label>
+              <div className="flex flex-col gap-3 rounded-xl border border-border p-3">
+                <Label>
+                  <Checkbox
+                    checked={field.state.value}
+                    onCheckedChange={(checked) => {
+                      const isRecurring = checked === true
+                      field.handleChange(isRecurring)
+                      if (isRecurring && !form.getFieldValue('recurrence')) {
+                        const seedDate = new Date(fromDateInput(form.getFieldValue('date')))
+                        form.setFieldValue('recurrence', {
+                          frequency: 'monthly',
+                          interval: 1,
+                          dayOfMonth: seedDate.getDate(),
+                        })
+                      }
+                    }}
+                  />
+                  Recurring
+                </Label>
+
+                {field.state.value ? (
+                  <form.Field name="recurrence">
+                    {(recurrenceField) => {
+                      const value: Recurrence = recurrenceField.state.value ?? {
+                        frequency: 'monthly',
+                        interval: 1,
+                        dayOfMonth: 1,
+                      }
+                      return (
+                        <div className="grid grid-cols-2 gap-3 pl-6">
+                          <Label className="flex flex-col items-start gap-1">
+                            Repeats
+                            <Select
+                              value={value.frequency}
+                              onValueChange={(frequency) => {
+                                if (!frequency) return
+                                const seedDate = new Date(fromDateInput(form.getFieldValue('date')))
+                                recurrenceField.handleChange(
+                                  frequency === 'weekly'
+                                    ? {
+                                        frequency: 'weekly',
+                                        interval: value.interval,
+                                        weekday: seedDate.getDay(),
+                                      }
+                                    : {
+                                        frequency: 'monthly',
+                                        interval: value.interval,
+                                        dayOfMonth: seedDate.getDate(),
+                                      },
+                                )
+                              }}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue>
+                                  {(frequency: string) =>
+                                    frequency === 'weekly' ? 'Weekly' : 'Monthly'
+                                  }
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </Label>
+
+                          <Label className="flex flex-col items-start gap-1">
+                            Every
+                            <div className="flex w-full items-center gap-2">
+                              <Input
+                                type="number"
+                                min="1"
+                                max={value.frequency === 'weekly' ? 52 : 24}
+                                value={value.interval}
+                                onChange={(e) =>
+                                  recurrenceField.handleChange({
+                                    ...value,
+                                    interval: Math.max(1, Number(e.target.value) || 1),
+                                  })
+                                }
+                              />
+                              <span className="text-xs whitespace-nowrap text-muted-foreground">
+                                {value.frequency === 'weekly' ? 'week(s)' : 'month(s)'}
+                              </span>
+                            </div>
+                          </Label>
+
+                          {value.frequency === 'weekly' ? (
+                            <Label className="col-span-2 flex flex-col items-start gap-1">
+                              On
+                              <Select
+                                value={String(value.weekday ?? 0)}
+                                onValueChange={(weekday) =>
+                                  weekday &&
+                                  recurrenceField.handleChange({
+                                    ...value,
+                                    weekday: Number(weekday),
+                                  })
+                                }
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue>
+                                    {(weekday: string) => WEEKDAYS[Number(weekday)]}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {WEEKDAYS.map((label, index) => (
+                                    <SelectItem key={label} value={String(index)}>
+                                      {label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </Label>
+                          ) : (
+                            <Label className="col-span-2 flex flex-col items-start gap-1">
+                              On day
+                              <Input
+                                type="number"
+                                min="1"
+                                max="31"
+                                value={value.dayOfMonth ?? 1}
+                                onChange={(e) =>
+                                  recurrenceField.handleChange({
+                                    ...value,
+                                    dayOfMonth: Math.min(
+                                      31,
+                                      Math.max(1, Number(e.target.value) || 1),
+                                    ),
+                                  })
+                                }
+                              />
+                            </Label>
+                          )}
+
+                          <p className="col-span-2 text-xs text-muted-foreground">
+                            {describeRecurrence(value)}
+                          </p>
+                        </div>
+                      )
+                    }}
+                  </form.Field>
+                ) : null}
+              </div>
             )}
           </form.Field>
 
@@ -311,6 +464,7 @@ export function toCardMutationArgs(values: CardFormValues) {
     category: values.category,
     priority: values.priority,
     recurring: values.recurring,
+    recurrence: values.recurring ? (values.recurrence ?? undefined) : undefined,
     source: values.source.trim() || undefined,
     status: values.status,
   }

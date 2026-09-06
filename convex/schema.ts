@@ -15,6 +15,18 @@ export const cardStatus = v.union(
 
 export const cardPriority = v.union(v.literal('low'), v.literal('medium'), v.literal('high'))
 
+export const recurrenceFrequency = v.union(v.literal('weekly'), v.literal('monthly'))
+
+export const recurrence = v.object({
+  frequency: recurrenceFrequency,
+  // repeat every N weeks/months
+  interval: v.number(),
+  // weekly only, 0 (Sunday) - 6 (Saturday)
+  weekday: v.optional(v.number()),
+  // monthly only, 1-31 (clamped to the last day of shorter months)
+  dayOfMonth: v.optional(v.number()),
+})
+
 export default defineSchema({
   cards: defineTable({
     userId: v.string(),
@@ -26,6 +38,7 @@ export default defineSchema({
     category: v.string(),
     priority: cardPriority,
     recurring: v.boolean(),
+    recurrence: v.optional(recurrence),
     source: v.optional(v.string()),
     status: cardStatus,
     // sort position within a column, ascending

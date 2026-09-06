@@ -5,6 +5,17 @@ export const DAY = 24 * 60 * 60 * 1000
 export type CardType = 'income' | 'expense'
 export type CardStatus = 'upcoming' | 'due' | 'paid' | 'expected' | 'received'
 export type CardPriority = 'low' | 'medium' | 'high'
+export type RecurrenceFrequency = 'weekly' | 'monthly'
+
+export interface Recurrence {
+  frequency: RecurrenceFrequency
+  /** Repeat every N weeks/months. */
+  interval: number
+  /** Weekly only, 0 (Sunday) - 6 (Saturday). */
+  weekday?: number
+  /** Monthly only, 1-31 (clamped to the last day of shorter months). */
+  dayOfMonth?: number
+}
 
 export interface Card {
   _id: string
@@ -17,6 +28,7 @@ export interface Card {
   category: string
   priority: CardPriority
   recurring: boolean
+  recurrence?: Recurrence
   source?: string
   status: CardStatus
   order: number
@@ -104,6 +116,65 @@ export function toDateInput(ms: number) {
 export function fromDateInput(value: string) {
   const [y, m, d] = value.split('-').map(Number)
   return new Date(y, m - 1, d, 12).getTime()
+}
+
+export const WEEKDAYS = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+]
+
+function ordinal(n: number) {
+  if (n % 100 >= 11 && n % 100 <= 13) return `${n}th`
+  switch (n % 10) {
+    case 1:
+      return `${n}st`
+    case 2:
+      return `${n}nd`
+    case 3:
+      return `${n}rd`
+    default:
+      return `${n}th`
+  }
+}
+
+/** Human-readable summary of a recurrence rule, e.g. "Every 2 weeks on Wednesday". */
+export function describeRecurrence(recurrence: Recurrence): string {
+  if (recurrence.frequency === 'weekly') {
+    const weekday = WEEKDAYS[recurrence.weekday ?? 0]
+    return recurrence.interval === 1
+      ? `Weekly on ${weekday}`
+      : `Every ${recurrence.interval} weeks on ${weekday}`
+  }
+  const day = ordinal(recurrence.dayOfMonth ?? 1)
+  return recurrence.interval === 1
+    ? `Monthly on the ${day}`
+    : `Every ${recurrence.interval} months on the ${day}`
+}
+
+/** The next date a recurrence rule lands on, strictly after `fromDate`. */
+export function nextOccurrence(fromDate: number, recurrence: Recurrence): number {
+  const from = new Date(fromDate)
+
+  if (recurrence.frequency === 'weekly') {
+    const targetWeekday = recurrence.weekday ?? from.getDay()
+    const next = new Date(from)
+    next.setDate(next.getDate() + 1)
+    while (next.getDay() !== targetWeekday) next.setDate(next.getDate() + 1)
+    next.setDate(next.getDate() + (recurrence.interval - 1) * 7)
+    next.setHours(12, 0, 0, 0)
+    return next.getTime()
+  }
+
+  const day = recurrence.dayOfMonth ?? from.getDate()
+  const next = new Date(from.getFullYear(), from.getMonth() + recurrence.interval, 1, 12)
+  const daysInMonth = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate()
+  next.setDate(Math.min(day, daysInMonth))
+  return next.getTime()
 }
 
 export type DateUrgency = 'overdue' | 'due-soon' | 'later' | 'done'
