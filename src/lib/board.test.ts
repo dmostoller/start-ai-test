@@ -4,6 +4,7 @@ import {
   describeRecurrence,
   fromDateInput,
   nextOccurrence,
+  occurrencesInRange,
   relativeDue,
   statusLabel,
   toDateInput,
@@ -126,6 +127,46 @@ describe('nextOccurrence', () => {
     const jan31 = fromDateInput('2026-01-31')
     const rule: Recurrence = { frequency: 'monthly', interval: 1, dayOfMonth: 31 }
     expect(toDateInput(nextOccurrence(jan31, rule))).toBe('2026-02-28')
+  })
+})
+
+describe('occurrencesInRange', () => {
+  test('a one-off card only lands on its own date', () => {
+    const now = Date.now()
+    const date = now + 10 * DAY
+    expect(occurrencesInRange(card({ date, recurring: false }), now, now + 30 * DAY)).toEqual([
+      date,
+    ])
+  })
+
+  test('projects a biweekly paycheck across a wide horizon', () => {
+    const now = fromDateInput('2026-09-06') // a Sunday
+    const rule: Recurrence = { frequency: 'weekly', interval: 2, weekday: 3 }
+    const paycheck = card({ date: now + 3 * DAY, recurring: true, recurrence: rule })
+
+    const occurrences = occurrencesInRange(paycheck, now, now + 60 * DAY)
+    expect(occurrences).toHaveLength(5)
+    expect(occurrences.every((d) => new Date(d).getDay() === 3)).toBe(true)
+    // ~14 days apart — rounded to absorb DST's odd hour across the range
+    expect(
+      occurrences.every((_, i, all) => i === 0 || Math.round((all[i] - all[i - 1]) / DAY) === 14),
+    ).toBe(true)
+  })
+
+  test('always includes the card’s own date, even if overdue', () => {
+    const now = Date.now()
+    const rule: Recurrence = { frequency: 'monthly', interval: 1, dayOfMonth: 1 }
+    const overdue = card({ date: now - 2 * DAY, recurring: true, recurrence: rule })
+
+    const occurrences = occurrencesInRange(overdue, now, now + 30 * DAY)
+    expect(occurrences[0]).toBe(overdue.date)
+  })
+
+  test('returns nothing once the card’s own date is past the horizon', () => {
+    const now = Date.now()
+    const rule: Recurrence = { frequency: 'monthly', interval: 1, dayOfMonth: 1 }
+    const farOut = card({ date: now + 90 * DAY, recurring: true, recurrence: rule })
+    expect(occurrencesInRange(farOut, now, now + 30 * DAY)).toEqual([])
   })
 })
 

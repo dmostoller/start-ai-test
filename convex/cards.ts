@@ -1,7 +1,7 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
 import { cardPriority, cardStatus, cardType, recurrence } from './schema'
-import { isCompletedStatus, statusesForType } from './lib'
+import { isCompletedStatus, occurrencesInRange, statusesForType } from './lib'
 import type { MutationCtx } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 
@@ -204,7 +204,15 @@ export const repeat = mutation({
   },
 })
 
-/** Aggregate totals used by the info bar and by the AI's balance queries. */
+/**
+ * Aggregate totals used by the info bar and by the AI's balance queries.
+ *
+ * Income and expense totals project recurring cards forward across the
+ * horizon (a biweekly paycheck counts every payday landing in the window,
+ * not just its own card), so they stay comparable to hand-entered series of
+ * one-off cards. Overdue/due-soon counts stay anchored to each card's own
+ * date — they describe cards that need action today, not future forecasts.
+ */
 export const stats = query({
   args: { userId: v.string(), horizonDays: v.optional(v.number()) },
   handler: async (ctx, { userId, horizonDays }) => {
@@ -215,15 +223,17 @@ export const stats = query({
 
     const now = Date.now()
     const horizon = now + (horizonDays ?? 30) * DAY
-    const inRange = cards.filter((c) => c.date <= horizon)
+    const open = cards.filter((c) => !isCompletedStatus(c.status))
 
-    const open = inRange.filter((c) => !isCompletedStatus(c.status))
-    const upcomingExpenses = open
-      .filter((c) => c.type === 'expense')
-      .reduce((sum, c) => sum + c.amount, 0)
-    const expectedIncome = open
-      .filter((c) => c.type === 'income')
-      .reduce((sum, c) => sum + c.amount, 0)
+    let upcomingExpenses = 0
+    let expectedIncome = 0
+    for (const card of open) {
+      const occurrences = occurrencesInRange(card.date, card.recurrence, now, horizon)
+      if (occurrences.length === 0) continue
+      const total = card.amount * occurrences.length
+      if (card.type === 'expense') upcomingExpenses += total
+      else expectedIncome += total
+    }
 
     const overdue = open.filter((c) => c.type === 'expense' && c.date < now)
     const dueSoon = open.filter(

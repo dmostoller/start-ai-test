@@ -12,9 +12,7 @@ export default function Header() {
           className="group flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           <FolderKanban className="h-6 w-6 text-muted-foreground transition-colors group-hover:text-foreground" />
-          <span className="text-lg font-semibold tracking-tight text-foreground">
-            Budget Board
-          </span>
+          <span className="text-lg font-semibold tracking-tight text-foreground">Budget Board</span>
         </Link>
 
         <div className="ml-auto flex items-center gap-2">

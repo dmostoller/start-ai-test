@@ -250,7 +250,7 @@ export default function Board({ userId }: { userId: string }) {
       {!boardIsEmpty ? (
         <div className="mb-6 grid gap-4 lg:grid-cols-2">
           <CashFlowChart cards={visible} horizonDays={horizonDays} />
-          <CategoryChart cards={visible} />
+          <CategoryChart cards={visible} horizonDays={horizonDays} />
         </div>
       ) : null}
 

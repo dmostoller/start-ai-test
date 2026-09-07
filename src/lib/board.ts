@@ -177,6 +177,31 @@ export function nextOccurrence(fromDate: number, recurrence: Recurrence): number
   return next.getTime()
 }
 
+/**
+ * Every date within [now, horizonEnd] a card lands on for forecasting
+ * purposes — just its own date for a one-off card, or every future
+ * occurrence for a recurring one. The card's own date is always included
+ * (even if overdue), but occurrences skipped between then and now are not
+ * back-filled as a missed backlog.
+ */
+export function occurrencesInRange(
+  card: Pick<Card, 'date' | 'recurring' | 'recurrence'>,
+  now: number,
+  horizonEnd: number,
+): Array<number> {
+  if (card.date > horizonEnd) return []
+  if (!card.recurring || !card.recurrence) return [card.date]
+
+  const dates = [card.date]
+  let cursor = card.date
+  for (let i = 0; i < 1000; i++) {
+    cursor = nextOccurrence(cursor, card.recurrence)
+    if (cursor > horizonEnd) break
+    if (cursor >= now) dates.push(cursor)
+  }
+  return dates
+}
+
 export type DateUrgency = 'overdue' | 'due-soon' | 'later' | 'done'
 
 export function urgency(card: Card, now = Date.now()): DateUrgency {

@@ -320,4 +320,43 @@ describe('cards.stats', () => {
       (await t.query(api.cards.stats, { userId: USER, horizonDays: 120 })).upcomingExpenses,
     ).toBe(999)
   })
+
+  test('projects a recurring card’s future occurrences into the totals', async () => {
+    const t = setup()
+    // a biweekly paycheck, due soon, repeating across a full year
+    await t.mutation(
+      api.cards.create,
+      expenseArgs({
+        type: 'income',
+        category: 'Salary',
+        amount: 3500,
+        date: Date.now() + 2 * DAY,
+        recurring: true,
+        recurrence: { frequency: 'weekly', interval: 2, weekday: new Date().getDay() },
+        status: 'expected',
+      }),
+    )
+
+    const stats = await t.query(api.cards.stats, { userId: USER, horizonDays: 365 })
+    // roughly 26 paydays a year — comfortably more than the single-card total
+    expect(stats.expectedIncome).toBeGreaterThan(3500 * 20)
+  })
+
+  test('does not project a completed recurring card forward', async () => {
+    const t = setup()
+    await t.mutation(
+      api.cards.create,
+      expenseArgs({
+        type: 'income',
+        category: 'Salary',
+        amount: 3500,
+        status: 'received',
+        recurring: true,
+        recurrence: { frequency: 'weekly', interval: 2, weekday: new Date().getDay() },
+      }),
+    )
+
+    const stats = await t.query(api.cards.stats, { userId: USER, horizonDays: 365 })
+    expect(stats.expectedIncome).toBe(0)
+  })
 })

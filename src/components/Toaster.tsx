@@ -9,7 +9,7 @@ export default function Toaster() {
   if (list.length === 0) return null
 
   return (
-    <div className="pointer-events-none fixed bottom-4 left-1/2 z-[200] flex w-[min(92vw,26rem)] -translate-x-1/2 flex-col gap-2">
+    <div className="pointer-events-none fixed bottom-4 left-1/2 z-200 flex w-[min(92vw,26rem)] -translate-x-1/2 flex-col gap-2">
       {list.map((toast) => (
         <div
           key={toast.id}
